@@ -42,7 +42,7 @@ function formatPrice(price: number | null, currency: string): string {
 function PhotoGrid({ photos }: { photos: string[] }) {
   if (photos.length === 0) {
     return (
-      <div className="aspect-[16/10] bg-muted flex items-center justify-center text-muted-foreground rounded-t-lg">
+      <div className="w-[240px] h-[300px] shrink-0 bg-muted flex items-center justify-center text-muted-foreground rounded-l-lg">
         <ImageIcon className="h-10 w-10" />
       </div>
     );
@@ -50,7 +50,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 
   if (photos.length === 1) {
     return (
-      <div className="aspect-[16/10] overflow-hidden rounded-t-lg bg-muted">
+      <div className="w-[240px] h-[300px] shrink-0 overflow-hidden rounded-l-lg bg-muted">
         <img
           src={photos[0]}
           alt=""
@@ -62,7 +62,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 
   if (photos.length === 2) {
     return (
-      <div className="grid grid-cols-2 gap-0.5 aspect-[16/10] overflow-hidden rounded-t-lg">
+      <div className="w-[240px] h-[300px] shrink-0 grid grid-cols-2 gap-0.5 overflow-hidden rounded-l-lg">
         {photos.slice(0, 2).map((url, i) => (
           <img key={i} src={url} alt="" className="w-full h-full object-cover" />
         ))}
@@ -72,7 +72,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 
   if (photos.length === 3) {
     return (
-      <div className="grid grid-cols-2 gap-0.5 aspect-[16/10] overflow-hidden rounded-t-lg">
+      <div className="w-[240px] h-[300px] shrink-0 grid grid-cols-2 gap-0.5 overflow-hidden rounded-l-lg">
         <img
           src={photos[0]}
           alt=""
@@ -86,7 +86,7 @@ function PhotoGrid({ photos }: { photos: string[] }) {
 
   // 4+ photos: 2x2 grid with +N overlay
   return (
-    <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-[16/10] overflow-hidden rounded-t-lg">
+    <div className="w-[240px] h-[300px] shrink-0 grid grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden rounded-l-lg">
       {photos.slice(0, 4).map((url, i) => (
         <div key={i} className="relative overflow-hidden">
           <img src={url} alt="" className="w-full h-full object-cover" />
@@ -114,7 +114,7 @@ export function ListingCard({
     <button
       onClick={onClick}
       className={cn(
-        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden",
+        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden flex",
         isSelected && "border-primary bg-accent"
       )}
     >
@@ -122,14 +122,14 @@ export function ListingCard({
       <PhotoGrid photos={listing.photos} />
 
       {/* Content */}
-      <div className="p-3 space-y-1.5">
+      <div className="p-3 space-y-1.5 flex-1 min-w-0">
         {/* Price */}
         <p className="font-semibold text-lg">
           {formatPrice(listing.price, listing.currency)}
         </p>
 
         {/* Description */}
-        <p className="text-sm text-muted-foreground line-clamp-2">
+        <p className="text-sm text-muted-foreground line-clamp-4">
           {description}
         </p>
 
