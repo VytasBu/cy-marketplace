@@ -5,7 +5,6 @@ import { PriceRangeFilter } from "@/components/filters/price-range-filter";
 import { LocationFilter } from "@/components/filters/location-filter";
 import { DateFilter } from "@/components/filters/date-filter";
 import { SortSelect } from "@/components/filters/sort-select";
-import { LanguageToggle } from "@/components/filters/language-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useFilters } from "@/lib/hooks/use-filters";
@@ -41,10 +40,6 @@ export function FiltersSidebar() {
       <Separator />
 
       <DateFilter />
-
-      <Separator />
-
-      <LanguageToggle />
     </div>
   );
 }
