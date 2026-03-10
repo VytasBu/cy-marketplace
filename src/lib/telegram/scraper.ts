@@ -53,10 +53,12 @@ export async function scrapeChannel(): Promise<{
 
   try {
     // Fetch messages from channel
+    // Keep limit low to avoid rate limits and protect the account
+    const FETCH_LIMIT = 20;
     const messages: Api.Message[] = [];
     for await (const message of client.iterMessages(channelUsername, {
       minId: lastMessageId,
-      limit: 100,
+      limit: FETCH_LIMIT,
     })) {
       if (message instanceof Api.Message && message.message) {
         messages.push(message);
@@ -82,6 +84,9 @@ export async function scrapeChannel(): Promise<{
       }
     }
 
+    // Small delay helper to be gentle on the API
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
     // Process standalone messages
     for (const msg of standaloneMessages) {
       try {
@@ -91,6 +96,7 @@ export async function scrapeChannel(): Promise<{
           processed++;
         }
         if (msg.id > maxMessageId) maxMessageId = msg.id;
+        await sleep(500); // gentle rate limiting
       } catch (err) {
         console.error(`Error processing message ${msg.id}:`, err);
         errors++;
@@ -111,6 +117,7 @@ export async function scrapeChannel(): Promise<{
         }
         const maxId = Math.max(...group.map((m) => m.id));
         if (maxId > maxMessageId) maxMessageId = maxId;
+        await sleep(500); // gentle rate limiting
       } catch (err) {
         console.error(`Error processing grouped messages:`, err);
         errors++;

@@ -22,6 +22,27 @@ async function getAllCategories(): Promise<Category[]> {
 }
 
 /**
+ * Check if a keyword matches in text with word boundary awareness.
+ * Short keywords (≤3 chars) require word boundaries to prevent
+ * false positives like "пк" matching inside "кнопка".
+ */
+function keywordMatchesInText(keyword: string, text: string): boolean {
+  const lowerKeyword = keyword.toLowerCase();
+
+  // Short keywords need word boundary matching
+  if (lowerKeyword.length <= 3) {
+    // Build regex with unicode word boundaries
+    // Use lookbehind/lookahead for non-word chars or start/end of string
+    const escaped = lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(?:^|[\\s,.!?;:()\\[\\]{}"\\/\\-–—])${escaped}(?:$|[\\s,.!?;:()\\[\\]{}"\\/\\-–—])`, "i");
+    return regex.test(text);
+  }
+
+  // Longer keywords can use simple substring matching
+  return text.includes(lowerKeyword);
+}
+
+/**
  * Step 1: Keyword-based categorization.
  * Checks deepest categories first (level 2 → 1 → 0) for best specificity.
  */
@@ -38,7 +59,7 @@ function keywordMatch(
 
     let score = 0;
     for (const keyword of cat.keywords) {
-      if (lowerText.includes(keyword.toLowerCase())) {
+      if (keywordMatchesInText(keyword, lowerText)) {
         score++;
       }
     }

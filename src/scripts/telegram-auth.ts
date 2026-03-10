@@ -6,6 +6,9 @@
  * and output a StringSession to save in your .env.local file.
  */
 
+import { config } from "dotenv";
+config({ path: ".env.local" });
+
 import { TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";
 import * as readline from "readline";
