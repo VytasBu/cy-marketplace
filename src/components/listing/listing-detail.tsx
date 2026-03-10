@@ -14,6 +14,7 @@ import {
   Globe,
   Image as ImageIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Listing } from "@/types";
 
 interface ListingDetailProps {
@@ -55,6 +56,8 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
     ? `https://t.me/${listing.telegram_sender_username}`
     : null;
 
+  const hasMultiplePhotos = listing.photos.length > 1;
+
   return (
     <div className="flex flex-col">
       {/* Header */}
@@ -65,7 +68,7 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
         </Button>
       </div>
 
-      {/* Photo carousel */}
+      {/* Main photo */}
       {listing.photos.length > 0 ? (
         <div className="relative aspect-[4/3] bg-muted">
           <img
@@ -73,7 +76,7 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
             alt=""
             className="w-full h-full object-contain"
           />
-          {listing.photos.length > 1 && (
+          {hasMultiplePhotos && (
             <>
               <button
                 onClick={() =>
@@ -81,7 +84,7 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
                     p > 0 ? p - 1 : listing.photos.length - 1
                   )
                 }
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -91,7 +94,7 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
                     p < listing.photos.length - 1 ? p + 1 : 0
                   )
                 }
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -104,6 +107,30 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
       ) : (
         <div className="aspect-[4/3] bg-muted flex items-center justify-center text-muted-foreground">
           <ImageIcon className="h-12 w-12" />
+        </div>
+      )}
+
+      {/* Thumbnail strip */}
+      {hasMultiplePhotos && (
+        <div className="flex gap-1.5 px-3 py-2 overflow-x-auto">
+          {listing.photos.map((url, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPhoto(i)}
+              className={cn(
+                "w-14 h-14 rounded-md overflow-hidden shrink-0 border-2 transition-colors",
+                currentPhoto === i
+                  ? "border-primary"
+                  : "border-transparent opacity-60 hover:opacity-100"
+              )}
+            >
+              <img
+                src={url}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
         </div>
       )}
 

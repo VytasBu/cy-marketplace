@@ -38,58 +38,103 @@ function formatPrice(price: number | null, currency: string): string {
   return `${symbol}${price.toLocaleString()}`;
 }
 
+/** Renders the photo grid based on number of photos */
+function PhotoGrid({ photos }: { photos: string[] }) {
+  if (photos.length === 0) {
+    return (
+      <div className="aspect-[16/10] bg-muted flex items-center justify-center text-muted-foreground rounded-t-lg">
+        <ImageIcon className="h-10 w-10" />
+      </div>
+    );
+  }
+
+  if (photos.length === 1) {
+    return (
+      <div className="aspect-[16/10] overflow-hidden rounded-t-lg bg-muted">
+        <img
+          src={photos[0]}
+          alt=""
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  if (photos.length === 2) {
+    return (
+      <div className="grid grid-cols-2 gap-0.5 aspect-[16/10] overflow-hidden rounded-t-lg">
+        {photos.slice(0, 2).map((url, i) => (
+          <img key={i} src={url} alt="" className="w-full h-full object-cover" />
+        ))}
+      </div>
+    );
+  }
+
+  if (photos.length === 3) {
+    return (
+      <div className="grid grid-cols-2 gap-0.5 aspect-[16/10] overflow-hidden rounded-t-lg">
+        <img
+          src={photos[0]}
+          alt=""
+          className="w-full h-full object-cover row-span-2"
+        />
+        <img src={photos[1]} alt="" className="w-full h-full object-cover" />
+        <img src={photos[2]} alt="" className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  // 4+ photos: 2x2 grid with +N overlay
+  return (
+    <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-[16/10] overflow-hidden rounded-t-lg">
+      {photos.slice(0, 4).map((url, i) => (
+        <div key={i} className="relative overflow-hidden">
+          <img src={url} alt="" className="w-full h-full object-cover" />
+          {i === 3 && photos.length > 4 && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white text-lg font-semibold">
+                +{photos.length - 4}
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ListingCard({
   listing,
   isSelected,
   onClick,
 }: ListingCardProps) {
-  const thumbnail = listing.photos[0];
   const description = listing.description_en || listing.description_original;
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex gap-3 p-3 rounded-lg border text-left transition-colors hover:bg-accent/50",
+        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden",
         isSelected && "border-primary bg-accent"
       )}
     >
-      {/* Thumbnail */}
-      <div className="relative w-24 h-24 rounded-md overflow-hidden bg-muted shrink-0">
-        {thumbnail ? (
-          <img
-            src={thumbnail}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <ImageIcon className="h-8 w-8" />
-          </div>
-        )}
-        {listing.photos.length > 1 && (
-          <span className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-            {listing.photos.length}
-          </span>
-        )}
-      </div>
+      {/* Photo grid */}
+      <PhotoGrid photos={listing.photos} />
 
       {/* Content */}
-      <div className="flex-1 min-w-0 flex flex-col justify-between">
-        <div>
-          {/* Price */}
-          <p className="font-semibold text-base">
-            {formatPrice(listing.price, listing.currency)}
-          </p>
+      <div className="p-3 space-y-1.5">
+        {/* Price */}
+        <p className="font-semibold text-lg">
+          {formatPrice(listing.price, listing.currency)}
+        </p>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
-            {description}
-          </p>
-        </div>
+        {/* Description */}
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {description}
+        </p>
 
         {/* Meta */}
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap pt-1">
           {listing.location && (
             <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />

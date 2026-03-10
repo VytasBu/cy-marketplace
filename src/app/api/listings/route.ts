@@ -22,29 +22,46 @@ export async function GET(request: NextRequest) {
     .select("*, category:categories(*)", { count: "exact" })
     .eq("is_duplicate", false);
 
-  // Category filter — match category and all its children
+  // Category filter — match category and all its children/grandchildren
   if (category) {
-    // Get all category IDs in this tree branch
-    const { data: categories } = await supabase
+    // Step 1: Find the selected category by slug
+    const { data: selectedCat } = await supabase
       .from("categories")
       .select("id")
-      .or(`slug.eq.${category},parent_id.in.(select id from categories where slug='${category}')`);
+      .eq("slug", category)
+      .single();
 
-    if (categories && categories.length > 0) {
-      const categoryIds = categories.map((c) => c.id);
-
-      // Also get level 2 children
-      const { data: subChildren } = await supabase
+    if (selectedCat) {
+      // Step 2: Find direct children
+      const { data: children } = await supabase
         .from("categories")
         .select("id")
-        .in("parent_id", categoryIds);
+        .eq("parent_id", selectedCat.id);
 
-      const allIds = [
-        ...categoryIds,
-        ...(subChildren?.map((c) => c.id) || []),
-      ];
+      const childIds = children?.map((c) => c.id) || [];
 
+      // Step 3: Find grandchildren (level 2)
+      let grandchildIds: number[] = [];
+      if (childIds.length > 0) {
+        const { data: grandchildren } = await supabase
+          .from("categories")
+          .select("id")
+          .in("parent_id", childIds);
+        grandchildIds = grandchildren?.map((c) => c.id) || [];
+      }
+
+      // Combine: selected + children + grandchildren
+      const allIds = [selectedCat.id, ...childIds, ...grandchildIds];
       query = query.in("category_id", allIds);
+    } else {
+      // Category slug not found — return empty results
+      return NextResponse.json({
+        listings: [],
+        total: 0,
+        page,
+        limit,
+        hasMore: false,
+      });
     }
   }
 
