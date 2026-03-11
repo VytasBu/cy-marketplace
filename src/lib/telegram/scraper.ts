@@ -57,8 +57,10 @@ export async function scrapeChannel(
   let minMessageId: number | null = null;
 
   try {
-    // 3 messages every 6 minutes via cron-job.org (30/hour covers peak ~17/hr)
-    const FETCH_LIMIT = 3;
+    // 15 raw API messages per batch. Albums use multiple API messages per post
+    // (e.g. 4 photos = 4 messages), so we need headroom.
+    // With 6-min cron: ~150 msgs/hour capacity vs ~9 posts/hour actual.
+    const FETCH_LIMIT = 15;
 
     // Bots to ignore
     const IGNORED_USERNAMES = ["chatkeeperbot"];
@@ -70,13 +72,16 @@ export async function scrapeChannel(
         minId: lastMessageId,
         limit: FETCH_LIMIT,
       })) {
-        if (message instanceof Api.Message && message.message) {
+        if (message instanceof Api.Message) {
+          // Track ALL message IDs for bookmark (prevents stuck loops)
+          if (message.id > maxMessageId) maxMessageId = message.id;
+          if (minMessageId === null || message.id < minMessageId)
+            minMessageId = message.id;
           messages.push(message);
         }
       }
     } else {
       // Backward: fetch messages OLDER than offsetId
-      // GramJS iterMessages with offsetId returns messages with ID < offsetId
       const iterOpts: { limit: number; offsetId?: number } = {
         limit: FETCH_LIMIT,
       };
@@ -87,13 +92,16 @@ export async function scrapeChannel(
         channelUsername,
         iterOpts
       )) {
-        if (message instanceof Api.Message && message.message) {
+        if (message instanceof Api.Message) {
+          if (message.id > maxMessageId) maxMessageId = message.id;
+          if (minMessageId === null || message.id < minMessageId)
+            minMessageId = message.id;
           messages.push(message);
         }
       }
     }
 
-    // Filter out bot messages (still track their IDs for bookmark)
+    // Filter out bot messages (still track their IDs for bookmark above)
     const filteredMessages: Api.Message[] = [];
     for (const msg of messages) {
       let isBot = false;
@@ -113,16 +121,7 @@ export async function scrapeChannel(
     }
 
     // Process in chronological order (oldest first)
-    // Use original messages for ID tracking, filtered for processing
-    messages.reverse();
     filteredMessages.reverse();
-
-    // Track min/max IDs (from ALL messages, including bots, for bookmark)
-    for (const msg of messages) {
-      if (msg.id > maxMessageId) maxMessageId = msg.id;
-      if (minMessageId === null || msg.id < minMessageId)
-        minMessageId = msg.id;
-    }
 
     // Group filtered messages by groupedId for album handling
     const groupedMessages = new Map<string, Api.Message[]>();
@@ -143,8 +142,9 @@ export async function scrapeChannel(
     // Small delay helper to be gentle on the API
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    // Process standalone messages
+    // Process standalone messages (skip text-less ones — no description to show)
     for (const msg of standaloneMessages) {
+      if (!msg.message?.trim()) continue;
       try {
         const raw = await extractMessage(client, msg, channelUsername);
         if (raw) {
