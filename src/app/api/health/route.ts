@@ -3,9 +3,16 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
 
+type Status = "ok" | "warning" | "critical";
+
 interface HealthCheck {
-  status: "ok" | "warning" | "critical";
+  status: Status;
   message: string;
+}
+
+function escalate(current: Status, next: Status): Status {
+  const levels: Record<Status, number> = { ok: 0, warning: 1, critical: 2 };
+  return levels[next] > levels[current] ? next : current;
 }
 
 export async function GET(request: NextRequest) {
@@ -18,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = createServiceClient();
   const checks: Record<string, HealthCheck> = {};
-  let overallStatus: "ok" | "warning" | "critical" = "ok";
+  let overallStatus: Status = "ok";
 
   // 1. Check last scrape time
   try {
@@ -38,13 +45,13 @@ export async function GET(request: NextRequest) {
           status: "critical",
           message: `No new listings in ${Math.round(hoursAgo)} hours. Scraper may be down.`,
         };
-        overallStatus = "critical";
+        overallStatus = escalate(overallStatus, "critical");
       } else if (hoursAgo > 3) {
         checks.scraping = {
           status: "warning",
           message: `Last listing added ${Math.round(hoursAgo)} hours ago.`,
         };
-        if (overallStatus !== "critical") overallStatus = "warning";
+        overallStatus = escalate(overallStatus, "warning");
       } else {
         checks.scraping = {
           status: "ok",
@@ -56,14 +63,14 @@ export async function GET(request: NextRequest) {
         status: "warning",
         message: "No listings found in database.",
       };
-      if (overallStatus !== "critical") overallStatus = "warning";
+      overallStatus = escalate(overallStatus, "warning");
     }
   } catch (err) {
     checks.scraping = {
       status: "critical",
       message: `DB query failed: ${err instanceof Error ? err.message : "unknown"}`,
     };
-    overallStatus = "critical";
+    overallStatus = escalate(overallStatus, "critical");
   }
 
   // 2. Check storage usage (estimate from listing count and photos)
@@ -95,13 +102,13 @@ export async function GET(request: NextRequest) {
         status: "critical",
         message: `~${estimatedMB}MB used (~${estimatedPct}% of 1GB). ${totalPhotos} photos across ${totalListings} listings. Running out of space!`,
       };
-      overallStatus = "critical";
+      overallStatus = escalate(overallStatus, "critical");
     } else if (estimatedPct > 50) {
       checks.storage = {
         status: "warning",
         message: `~${estimatedMB}MB used (~${estimatedPct}% of 1GB). ${totalPhotos} photos across ${totalListings} listings.`,
       };
-      if (overallStatus !== "critical") overallStatus = "warning";
+      overallStatus = escalate(overallStatus, "warning");
     } else {
       checks.storage = {
         status: "ok",
@@ -113,7 +120,7 @@ export async function GET(request: NextRequest) {
       status: "warning",
       message: `Could not estimate storage: ${err instanceof Error ? err.message : "unknown"}`,
     };
-    if (overallStatus !== "critical") overallStatus = "warning";
+    overallStatus = escalate(overallStatus, "warning");
   }
 
   // 3. Check Google Translate
@@ -136,14 +143,14 @@ export async function GET(request: NextRequest) {
         status: "critical",
         message: `Google Translate returned ${res.status}. May be rate-limited.`,
       };
-      overallStatus = "critical";
+      overallStatus = escalate(overallStatus, "critical");
     }
   } catch (err) {
     checks.translate = {
       status: "critical",
       message: `Google Translate unreachable: ${err instanceof Error ? err.message : "unknown"}`,
     };
-    overallStatus = "critical";
+    overallStatus = escalate(overallStatus, "critical");
   }
 
   // 4. Check Telegram auth (just verify env vars exist)
@@ -160,7 +167,7 @@ export async function GET(request: NextRequest) {
       status: "critical",
       message: `Missing env vars: ${missingVars.join(", ")}`,
     };
-    overallStatus = "critical";
+    overallStatus = escalate(overallStatus, "critical");
   } else {
     checks.telegram_auth = {
       status: "ok",
@@ -180,7 +187,7 @@ export async function GET(request: NextRequest) {
         status: "warning",
         message: `${untranslated} listings missing English translation. Translate may be failing.`,
       };
-      if (overallStatus !== "critical") overallStatus = "warning";
+      overallStatus = escalate(overallStatus, "warning");
     } else {
       checks.translations_backlog = {
         status: "ok",
