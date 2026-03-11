@@ -57,8 +57,8 @@ export async function scrapeChannel(
   let minMessageId: number | null = null;
 
   try {
-    // Keep limit low to avoid rate limits and fit within 60s timeout
-    const FETCH_LIMIT = 10;
+    // 25 covers peak hours (~17 posts/hour). Fits within 60s timeout.
+    const FETCH_LIMIT = 25;
     const messages: Api.Message[] = [];
 
     if (direction === "forward") {

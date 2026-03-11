@@ -30,8 +30,22 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Scrape error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+
+    // Classify the error for monitoring
+    let errorType = "unknown";
+    if (message.includes("AUTH_KEY") || message.includes("session")) {
+      errorType = "auth_expired";
+    } else if (message.includes("FLOOD") || message.includes("rate")) {
+      errorType = "rate_limited";
+    } else if (message.includes("timeout") || message.includes("TIMEOUT")) {
+      errorType = "timeout";
+    } else if (message.includes("CHANNEL") || message.includes("not found")) {
+      errorType = "channel_error";
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      { error: message, errorType, timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }
