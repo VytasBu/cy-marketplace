@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
   const telegramVars = [
     "TELEGRAM_API_ID",
     "TELEGRAM_API_HASH",
-    "TELEGRAM_STRING_SESSION",
+    "TELEGRAM_SESSION_STRING",
     "TELEGRAM_CHANNEL_USERNAME",
   ];
   const missingVars = telegramVars.filter((v) => !process.env[v]);
