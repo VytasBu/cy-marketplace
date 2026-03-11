@@ -57,8 +57,11 @@ export async function scrapeChannel(
   let minMessageId: number | null = null;
 
   try {
-    // 25 covers peak hours (~17 posts/hour). Fits within 60s timeout.
-    const FETCH_LIMIT = 25;
+    // 3 messages every 6 minutes via cron-job.org (30/hour covers peak ~17/hr)
+    const FETCH_LIMIT = 3;
+
+    // Bots to ignore
+    const IGNORED_USERNAMES = ["chatkeeperbot"];
     const messages: Api.Message[] = [];
 
     if (direction === "forward") {
@@ -90,21 +93,42 @@ export async function scrapeChannel(
       }
     }
 
-    // Process in chronological order (oldest first)
-    messages.reverse();
+    // Filter out bot messages (still track their IDs for bookmark)
+    const filteredMessages: Api.Message[] = [];
+    for (const msg of messages) {
+      let isBot = false;
+      if (msg.fromId) {
+        try {
+          const sender = await client.getEntity(msg.fromId);
+          if (sender instanceof Api.User && sender.username) {
+            isBot = IGNORED_USERNAMES.includes(sender.username.toLowerCase());
+          }
+        } catch {
+          // Can't resolve sender, keep the message
+        }
+      }
+      if (!isBot) {
+        filteredMessages.push(msg);
+      }
+    }
 
-    // Track min/max IDs
+    // Process in chronological order (oldest first)
+    // Use original messages for ID tracking, filtered for processing
+    messages.reverse();
+    filteredMessages.reverse();
+
+    // Track min/max IDs (from ALL messages, including bots, for bookmark)
     for (const msg of messages) {
       if (msg.id > maxMessageId) maxMessageId = msg.id;
       if (minMessageId === null || msg.id < minMessageId)
         minMessageId = msg.id;
     }
 
-    // Group messages by groupedId for album handling
+    // Group filtered messages by groupedId for album handling
     const groupedMessages = new Map<string, Api.Message[]>();
     const standaloneMessages: Api.Message[] = [];
 
-    for (const msg of messages) {
+    for (const msg of filteredMessages) {
       if (msg.groupedId) {
         const groupKey = msg.groupedId.toString();
         if (!groupedMessages.has(groupKey)) {
