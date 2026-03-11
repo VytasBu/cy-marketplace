@@ -1,5 +1,6 @@
 import { TelegramClient } from "telegram";
 import { Api } from "telegram/tl";
+import sharp from "sharp";
 import { createServiceClient } from "@/lib/supabase/server";
 
 export async function downloadAndUploadPhotos(
@@ -50,9 +51,21 @@ async function uploadToSupabase(
 ): Promise<string | null> {
   const path = `${listingId}/${index}.jpg`;
 
+  // Compress: resize to max 800px width, JPEG quality 70
+  let compressed: Buffer;
+  try {
+    compressed = await sharp(buffer)
+      .resize(800, undefined, { withoutEnlargement: true })
+      .jpeg({ quality: 70 })
+      .toBuffer();
+  } catch {
+    // If sharp fails (e.g. corrupted image), use original
+    compressed = buffer;
+  }
+
   const { error } = await supabase.storage
     .from("listing-photos")
-    .upload(path, buffer, {
+    .upload(path, compressed, {
       contentType: "image/jpeg",
       upsert: true,
     });

@@ -13,11 +13,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await scrapeChannel();
+    const direction =
+      request.nextUrl.searchParams.get("direction") === "backward"
+        ? "backward"
+        : "forward";
+    const offsetIdParam = request.nextUrl.searchParams.get("offsetId");
+    const offsetId = offsetIdParam ? parseInt(offsetIdParam) : undefined;
+
+    const result = await scrapeChannel(direction, offsetId);
     return NextResponse.json({
       success: true,
+      direction,
       processed: result.processed,
       errors: result.errors,
+      oldestId: result.oldestId,
     });
   } catch (error) {
     console.error("Scrape error:", error);

@@ -14,9 +14,13 @@ interface RawMessage {
   photos: string[];
 }
 
-export async function scrapeChannel(): Promise<{
+export async function scrapeChannel(
+  direction: "forward" | "backward" = "forward",
+  offsetId?: number
+): Promise<{
   processed: number;
   errors: number;
+  oldestId: number | null;
 }> {
   const supabase = createServiceClient();
   const channelUsername = process.env.TELEGRAM_CHANNEL_USERNAME;
@@ -32,7 +36,7 @@ export async function scrapeChannel(): Promise<{
     .eq("username", channelUsername)
     .single();
 
-  let lastMessageId = channelData?.last_scraped_message_id || 0;
+  const lastMessageId = channelData?.last_scraped_message_id || 0;
 
   // Ensure channel record exists
   if (!channelData) {
@@ -50,23 +54,51 @@ export async function scrapeChannel(): Promise<{
   let processed = 0;
   let errors = 0;
   let maxMessageId = lastMessageId;
+  let minMessageId: number | null = null;
 
   try {
-    // Fetch messages from channel
-    // Keep limit low to avoid rate limits and protect the account
-    const FETCH_LIMIT = 20;
+    // Keep limit low to avoid rate limits and fit within 60s timeout
+    const FETCH_LIMIT = 10;
     const messages: Api.Message[] = [];
-    for await (const message of client.iterMessages(channelUsername, {
-      minId: lastMessageId,
-      limit: FETCH_LIMIT,
-    })) {
-      if (message instanceof Api.Message && message.message) {
-        messages.push(message);
+
+    if (direction === "forward") {
+      // Forward: fetch messages NEWER than lastMessageId
+      for await (const message of client.iterMessages(channelUsername, {
+        minId: lastMessageId,
+        limit: FETCH_LIMIT,
+      })) {
+        if (message instanceof Api.Message && message.message) {
+          messages.push(message);
+        }
+      }
+    } else {
+      // Backward: fetch messages OLDER than offsetId
+      // GramJS iterMessages with offsetId returns messages with ID < offsetId
+      const iterOpts: { limit: number; offsetId?: number } = {
+        limit: FETCH_LIMIT,
+      };
+      if (offsetId) {
+        iterOpts.offsetId = offsetId;
+      }
+      for await (const message of client.iterMessages(
+        channelUsername,
+        iterOpts
+      )) {
+        if (message instanceof Api.Message && message.message) {
+          messages.push(message);
+        }
       }
     }
 
     // Process in chronological order (oldest first)
     messages.reverse();
+
+    // Track min/max IDs
+    for (const msg of messages) {
+      if (msg.id > maxMessageId) maxMessageId = msg.id;
+      if (minMessageId === null || msg.id < minMessageId)
+        minMessageId = msg.id;
+    }
 
     // Group messages by groupedId for album handling
     const groupedMessages = new Map<string, Api.Message[]>();
@@ -95,7 +127,6 @@ export async function scrapeChannel(): Promise<{
           await processListing(raw, channelUsername);
           processed++;
         }
-        if (msg.id > maxMessageId) maxMessageId = msg.id;
         await sleep(500); // gentle rate limiting
       } catch (err) {
         console.error(`Error processing message ${msg.id}:`, err);
@@ -115,8 +146,6 @@ export async function scrapeChannel(): Promise<{
           await processListing(raw, channelUsername);
           processed++;
         }
-        const maxId = Math.max(...group.map((m) => m.id));
-        if (maxId > maxMessageId) maxMessageId = maxId;
         await sleep(500); // gentle rate limiting
       } catch (err) {
         console.error(`Error processing grouped messages:`, err);
@@ -124,7 +153,7 @@ export async function scrapeChannel(): Promise<{
       }
     }
 
-    // Update last scraped message ID
+    // Update last scraped message ID (forward bookmark)
     if (maxMessageId > lastMessageId) {
       await supabase
         .from("telegram_channels")
@@ -135,7 +164,7 @@ export async function scrapeChannel(): Promise<{
     await disconnectTelegram();
   }
 
-  return { processed, errors };
+  return { processed, errors, oldestId: minMessageId };
 }
 
 async function extractMessage(
