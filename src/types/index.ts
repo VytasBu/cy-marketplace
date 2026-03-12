@@ -33,6 +33,7 @@ export interface Listing {
   created_at: string;
   updated_at: string;
   category?: Category;
+  category_path?: Category[]; // Breadcrumb: [root, ..., leaf]
 }
 
 export interface ListingsFilter {

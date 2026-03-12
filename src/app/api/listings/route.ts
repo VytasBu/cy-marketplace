@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import type { Category } from "@/types";
+
+// Build breadcrumb path for a category: [root, ..., leaf]
+function buildCategoryPath(
+  categoryId: number,
+  categoryMap: Map<number, Category>
+): Category[] {
+  const path: Category[] = [];
+  let current = categoryMap.get(categoryId);
+  while (current) {
+    path.unshift(current);
+    current = current.parent_id ? categoryMap.get(current.parent_id) : undefined;
+  }
+  return path;
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -20,7 +35,8 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("listings")
     .select("*, category:categories(*)", { count: "exact" })
-    .eq("is_duplicate", false);
+    .eq("is_duplicate", false)
+    .not("photos", "eq", "{}"); // Hide listings with no photos
 
   // Category filter — match category and all its children/grandchildren
   if (category) {
@@ -132,8 +148,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Build category breadcrumb paths
+  const listings = data || [];
+  if (listings.length > 0) {
+    // Fetch all categories once to build lookup map
+    const { data: allCategories } = await supabase
+      .from("categories")
+      .select("*");
+
+    if (allCategories) {
+      const categoryMap = new Map<number, Category>();
+      for (const cat of allCategories) {
+        categoryMap.set(cat.id, cat as Category);
+      }
+
+      for (const listing of listings) {
+        if (listing.category_id) {
+          (listing as Record<string, unknown>).category_path =
+            buildCategoryPath(listing.category_id, categoryMap);
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
-    listings: data || [],
+    listings,
     total: count || 0,
     page,
     limit,

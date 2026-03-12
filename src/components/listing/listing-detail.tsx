@@ -149,9 +149,18 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
               {listing.location}
             </Badge>
           )}
-          {listing.category && (
+          {listing.category_path && listing.category_path.length > 0 ? (
+            <Badge variant="secondary">
+              {listing.category_path.map((c, i) => (
+                <span key={c.id}>
+                  {i > 0 && <span className="opacity-50 mx-0.5">›</span>}
+                  {c.name}
+                </span>
+              ))}
+            </Badge>
+          ) : listing.category ? (
             <Badge variant="secondary">{listing.category.name}</Badge>
-          )}
+          ) : null}
           {listing.raw_date && (
             <Badge variant="outline" className="gap-1">
               <Clock className="h-3 w-3" />

@@ -141,7 +141,12 @@ export function ListingCard({
               {listing.location}
             </span>
           )}
-          {listing.category && (
+          {listing.category_path && listing.category_path.length > 0 && (
+            <span className="text-xs text-muted-foreground truncate">
+              {listing.category_path.map((c) => c.name).join(" › ")}
+            </span>
+          )}
+          {!listing.category_path && listing.category && (
             <Badge variant="secondary" className="text-xs py-0 px-1.5">
               {listing.category.name}
             </Badge>
