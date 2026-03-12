@@ -1,9 +1,11 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Clock, Image as ImageIcon } from "lucide-react";
+import { MapPin, Clock, Image as ImageIcon, Heart } from "lucide-react";
 import type { Listing } from "@/types";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/context/auth-context";
+import { useSavedListings } from "@/lib/hooks/use-saved-listings";
 
 interface ListingCardProps {
   listing: Listing;
@@ -109,15 +111,38 @@ export function ListingCard({
   onClick,
 }: ListingCardProps) {
   const description = listing.description_en || listing.description_original;
+  const { user } = useAuth();
+  const { isSaved, toggleSave } = useSavedListings();
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden flex",
+        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden flex relative group",
         isSelected && "border-primary bg-accent"
       )}
     >
+      {/* Heart button */}
+      {user && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSave(listing.id);
+          }}
+          className="absolute top-2 left-2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100 data-[saved=true]:opacity-100"
+          data-saved={isSaved(listing.id)}
+        >
+          <Heart
+            className={cn(
+              "size-4 transition-colors",
+              isSaved(listing.id)
+                ? "fill-red-500 text-red-500"
+                : "text-white"
+            )}
+          />
+        </button>
+      )}
+
       {/* Photo grid */}
       <PhotoGrid photos={listing.photos} />
 

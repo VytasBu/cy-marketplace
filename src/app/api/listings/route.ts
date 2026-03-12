@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
   const offset = (page - 1) * limit;
+  const ids = searchParams.get("ids"); // comma-separated UUIDs for saved listings
 
   const supabase = createServiceClient();
 
@@ -37,6 +38,14 @@ export async function GET(request: NextRequest) {
     .select("*, category:categories(*)", { count: "exact" })
     .eq("is_duplicate", false)
     .not("photos", "eq", "{}"); // Hide listings with no photos
+
+  // Filter by specific IDs (for saved listings page)
+  if (ids) {
+    const idList = ids.split(",").filter(Boolean);
+    if (idList.length > 0) {
+      query = query.in("id", idList);
+    }
+  }
 
   // Category filter — match category and all its children/grandchildren
   if (category) {

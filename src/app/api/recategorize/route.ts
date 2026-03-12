@@ -18,13 +18,23 @@ export async function GET(request: NextRequest) {
   // Clear category cache to ensure fresh data
   clearCategoryCache();
 
-  // Fetch all keyword-categorized listings
-  const { data: listings, error } = await supabase
+  // force=true re-categorizes ALL listings (e.g. after expanding category tree)
+  const force = request.nextUrl.searchParams.get("force") === "true";
+  const offset = parseInt(request.nextUrl.searchParams.get("offset") || "0");
+  const batchSize = parseInt(request.nextUrl.searchParams.get("limit") || "100");
+
+  // Fetch listings to recategorize
+  let query = supabase
     .from("listings")
     .select("id, description_original, description_en, categorization_method")
-    .eq("categorization_method", "keyword")
     .order("created_at", { ascending: false })
-    .limit(100); // Process in batches of 100
+    .range(offset, offset + batchSize - 1);
+
+  if (!force) {
+    query = query.eq("categorization_method", "keyword");
+  }
+
+  const { data: listings, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

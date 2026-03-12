@@ -13,9 +13,14 @@ import {
   ChevronRight,
   Globe,
   Image as ImageIcon,
+  Link2,
+  Check,
+  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing } from "@/types";
+import { useAuth } from "@/lib/context/auth-context";
+import { useSavedListings } from "@/lib/hooks/use-saved-listings";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -47,6 +52,16 @@ function formatDate(dateStr: string): string {
 export function ListingDetail({ listing, onClose }: ListingDetailProps) {
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [showRussian, setShowRussian] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
+  const { isSaved, toggleSave } = useSavedListings();
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const description = showRussian
     ? listing.description_original
@@ -63,9 +78,40 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b sticky top-0 bg-background z-10">
         <h3 className="font-semibold truncate">Listing Details</h3>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => toggleSave(listing.id)}
+              title={isSaved(listing.id) ? "Unsave" : "Save"}
+            >
+              <Heart
+                className={cn(
+                  "h-4 w-4 transition-colors",
+                  isSaved(listing.id)
+                    ? "fill-red-500 text-red-500"
+                    : ""
+                )}
+              />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCopyLink}
+            title="Copy link"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <Link2 className="h-4 w-4" />
+            )}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Main photo */}
