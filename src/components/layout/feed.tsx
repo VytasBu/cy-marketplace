@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useListings } from "@/lib/hooks/use-listings";
 import { ListingCard } from "@/components/listing/listing-card";
 import { SearchInput } from "@/components/filters/search-input";
+import { SaveSearchButton } from "@/components/filters/save-search-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
@@ -43,6 +44,7 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
       {/* Search + mobile filter button */}
       <div className="sticky top-0 z-10 bg-background border-b p-3 flex gap-2">
         <SearchInput />
+        <SaveSearchButton />
         <Button
           variant="outline"
           size="icon"

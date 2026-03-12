@@ -5,15 +5,12 @@ import { PriceRangeFilter } from "@/components/filters/price-range-filter";
 import { LocationFilter } from "@/components/filters/location-filter";
 import { DateFilter } from "@/components/filters/date-filter";
 import { SortSelect } from "@/components/filters/sort-select";
-import { SaveSearchDialog } from "@/components/filters/save-search-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useFilters } from "@/lib/hooks/use-filters";
-import { useAuth } from "@/lib/context/auth-context";
 
 export function FiltersSidebar() {
   const { clearFilters } = useFilters();
-  const { user } = useAuth();
 
   return (
     <div className="p-4 space-y-4">
@@ -43,13 +40,6 @@ export function FiltersSidebar() {
       <Separator />
 
       <DateFilter />
-
-      {user && (
-        <>
-          <Separator />
-          <SaveSearchDialog />
-        </>
-      )}
     </div>
   );
 }

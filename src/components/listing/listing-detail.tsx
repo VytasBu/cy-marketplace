@@ -53,7 +53,7 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [showRussian, setShowRussian] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { user } = useAuth();
+  const { user, setShowLoginDialog } = useAuth();
   const { isSaved, toggleSave } = useSavedListings();
 
   const handleCopyLink = () => {
@@ -79,23 +79,27 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
       <div className="flex items-center justify-between p-3 border-b sticky top-0 bg-background z-10">
         <h3 className="font-semibold truncate">Listing Details</h3>
         <div className="flex items-center gap-1">
-          {user && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => toggleSave(listing.id)}
-              title={isSaved(listing.id) ? "Unsave" : "Save"}
-            >
-              <Heart
-                className={cn(
-                  "h-4 w-4 transition-colors",
-                  isSaved(listing.id)
-                    ? "fill-red-500 text-red-500"
-                    : ""
-                )}
-              />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (!user) {
+                setShowLoginDialog(true);
+                return;
+              }
+              toggleSave(listing.id);
+            }}
+            title={isSaved(listing.id) ? "Unsave" : "Save"}
+          >
+            <Heart
+              className={cn(
+                "h-4 w-4 transition-colors",
+                isSaved(listing.id)
+                  ? "fill-red-500 text-red-500"
+                  : ""
+              )}
+            />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

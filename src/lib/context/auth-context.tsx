@@ -16,6 +16,8 @@ interface AuthContextType {
   loading: boolean;
   signInWithOtp: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  showLoginDialog: boolean;
+  setShowLoginDialog: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,11 +25,14 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signInWithOtp: async () => ({ error: null }),
   signOut: async () => {},
+  showLoginDialog: false,
+  setShowLoginDialog: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [supabase] = useState(() => createClient());
 
   useEffect(() => {
@@ -67,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithOtp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signInWithOtp, signOut, showLoginDialog, setShowLoginDialog }}>
       {children}
     </AuthContext.Provider>
   );

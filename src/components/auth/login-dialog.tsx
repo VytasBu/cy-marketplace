@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,8 +19,7 @@ export function LoginDialog() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [open, setOpen] = useState(false);
-  const { signInWithOtp } = useAuth();
+  const { signInWithOtp, showLoginDialog, setShowLoginDialog } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +42,7 @@ export function LoginDialog() {
   };
 
   const handleOpenChange = (isOpen: boolean) => {
-    setOpen(isOpen);
+    setShowLoginDialog(isOpen);
     if (!isOpen) {
       // Reset state when closing
       setEmail("");
@@ -53,9 +52,10 @@ export function LoginDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={showLoginDialog} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={<Button variant="outline" size="sm" />}
+        onClick={() => setShowLoginDialog(true)}
       >
         <LogIn className="size-4" />
         Sign In

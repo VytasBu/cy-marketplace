@@ -111,8 +111,17 @@ export function ListingCard({
   onClick,
 }: ListingCardProps) {
   const description = listing.description_en || listing.description_original;
-  const { user } = useAuth();
+  const { user, setShowLoginDialog } = useAuth();
   const { isSaved, toggleSave } = useSavedListings();
+
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      setShowLoginDialog(true);
+      return;
+    }
+    toggleSave(listing.id);
+  };
 
   return (
     <button
@@ -122,26 +131,21 @@ export function ListingCard({
         isSelected && "border-primary bg-accent"
       )}
     >
-      {/* Heart button */}
-      {user && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleSave(listing.id);
-          }}
-          className="absolute top-2 left-2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100 data-[saved=true]:opacity-100"
-          data-saved={isSaved(listing.id)}
-        >
-          <Heart
-            className={cn(
-              "size-4 transition-colors",
-              isSaved(listing.id)
-                ? "fill-red-500 text-red-500"
-                : "text-white"
-            )}
-          />
-        </button>
-      )}
+      {/* Heart button — always visible, prompts login if not signed in */}
+      <button
+        onClick={handleHeartClick}
+        className="absolute top-2 left-2 z-10 size-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center transition-all hover:bg-black/60 opacity-0 group-hover:opacity-100 data-[saved=true]:opacity-100"
+        data-saved={isSaved(listing.id)}
+      >
+        <Heart
+          className={cn(
+            "size-4 transition-colors",
+            isSaved(listing.id)
+              ? "fill-red-500 text-red-500"
+              : "text-white"
+          )}
+        />
+      </button>
 
       {/* Photo grid */}
       <PhotoGrid photos={listing.photos} />
