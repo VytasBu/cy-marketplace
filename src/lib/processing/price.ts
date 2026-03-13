@@ -13,6 +13,10 @@ interface PriceResult {
  * - Between symbol and number, only allow spaces (NOT newlines)
  * - Amount must be >= 5 to avoid matching model numbers (e.g., "iPhone 12")
  * - Prefer the first match that looks like a real price
+ *
+ * Number capture uses `\d(?:\d|[,. ](?=\d))*\d` so that separators (comma,
+ * dot, space) must be followed by a digit. This prevents "3150, 20€" from
+ * being captured as one number "3150, 20" — the comma-space breaks the match.
  */
 const PRICE_PATTERNS: Array<{
   regex: RegExp;
@@ -22,28 +26,30 @@ const PRICE_PATTERNS: Array<{
   // === EUR — "number €" first (most common in RU/EU) ===
   // Use [ \t] (not \s) between digits to avoid matching across newlines
   // e.g. "высота 40\n20€" should NOT become "4020€"
-  { regex: /(\d[\d ,.]*\d)[ \t]*€/, currency: "EUR", amountGroup: 1 },
-  { regex: /(\d[\d ,.]*\d)[ \t]*EUR\b/i, currency: "EUR", amountGroup: 1 },
-  { regex: /(\d[\d ,.]*\d)[ \t]*евро/i, currency: "EUR", amountGroup: 1 },
-  { regex: /(\d[\d ,.]*\d)[ \t]*euros?\b/i, currency: "EUR", amountGroup: 1 },
+  // Number group: separators (, . space) must be followed by a digit
+  // so "XP-3150, 20€" won't capture "3150, 20" as one number
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*€/, currency: "EUR", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*EUR\b/i, currency: "EUR", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*евро/i, currency: "EUR", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*euros?\b/i, currency: "EUR", amountGroup: 1 },
   // Single digit before currency
   { regex: /(\d)[ \t]*€/, currency: "EUR", amountGroup: 1 },
   { regex: /(\d)[ \t]*EUR\b/i, currency: "EUR", amountGroup: 1 },
   { regex: /(\d)[ \t]*евро/i, currency: "EUR", amountGroup: 1 },
   { regex: /(\d)[ \t]*euros?\b/i, currency: "EUR", amountGroup: 1 },
   // "€ number" — only allow spaces (no newlines) between symbol and digits
-  { regex: /€[ \t]*(\d[\d ,.]*)/, currency: "EUR", amountGroup: 1 },
-  { regex: /EUR[ \t]*(\d[\d ,.]*)/i, currency: "EUR", amountGroup: 1 },
+  { regex: /€[ \t]*(\d(?:\d|[,. ](?=\d))*)/, currency: "EUR", amountGroup: 1 },
+  { regex: /EUR[ \t]*(\d(?:\d|[,. ](?=\d))*)/i, currency: "EUR", amountGroup: 1 },
 
   // === USD ===
-  { regex: /(\d[\d ,.]*\d)[ \t]*\$/, currency: "USD", amountGroup: 1 },
-  { regex: /(\d[\d ,.]*\d)[ \t]*USD\b/i, currency: "USD", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*\$/, currency: "USD", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*USD\b/i, currency: "USD", amountGroup: 1 },
   {
-    regex: /(\d[\d ,.]*\d)[ \t]*доллар(?:ов|а|ы)?/i,
+    regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*доллар(?:ов|а|ы)?/i,
     currency: "USD",
     amountGroup: 1,
   },
-  { regex: /(\d[\d ,.]*\d)[ \t]*dollars?\b/i, currency: "USD", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*dollars?\b/i, currency: "USD", amountGroup: 1 },
   // Single digit before currency
   { regex: /(\d)[ \t]*\$/, currency: "USD", amountGroup: 1 },
   { regex: /(\d)[ \t]*USD\b/i, currency: "USD", amountGroup: 1 },
@@ -52,19 +58,19 @@ const PRICE_PATTERNS: Array<{
     currency: "USD",
     amountGroup: 1,
   },
-  { regex: /\$[ \t]*(\d[\d ,.]*)/, currency: "USD", amountGroup: 1 },
-  { regex: /USD[ \t]*(\d[\d ,.]*)/i, currency: "USD", amountGroup: 1 },
+  { regex: /\$[ \t]*(\d(?:\d|[,. ](?=\d))*)/, currency: "USD", amountGroup: 1 },
+  { regex: /USD[ \t]*(\d(?:\d|[,. ](?=\d))*)/i, currency: "USD", amountGroup: 1 },
 
   // === GBP ===
-  { regex: /(\d[\d ,.]*\d)[ \t]*£/, currency: "GBP", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*£/, currency: "GBP", amountGroup: 1 },
   { regex: /(\d)[ \t]*£/, currency: "GBP", amountGroup: 1 },
-  { regex: /£[ \t]*(\d[\d ,.]*)/, currency: "GBP", amountGroup: 1 },
+  { regex: /£[ \t]*(\d(?:\d|[,. ](?=\d))*)/, currency: "GBP", amountGroup: 1 },
 
   // === RUB ===
-  { regex: /(\d[\d ,.]*\d)[ \t]*₽/, currency: "RUB", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*₽/, currency: "RUB", amountGroup: 1 },
   { regex: /(\d)[ \t]*₽/, currency: "RUB", amountGroup: 1 },
   {
-    regex: /(\d[\d ,.]*\d)[ \t]*руб(?:лей|ля|ль|\.)?/i,
+    regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*руб(?:лей|ля|ль|\.)?/i,
     currency: "RUB",
     amountGroup: 1,
   },
@@ -73,7 +79,7 @@ const PRICE_PATTERNS: Array<{
     currency: "RUB",
     amountGroup: 1,
   },
-  { regex: /(\d[\d ,.]*\d)[ \t]*р\b/i, currency: "RUB", amountGroup: 1 },
+  { regex: /(\d(?:\d|[,. ](?=\d))*\d)[ \t]*р\b/i, currency: "RUB", amountGroup: 1 },
   { regex: /(\d)[ \t]*р\b/i, currency: "RUB", amountGroup: 1 },
 ];
 
@@ -87,12 +93,12 @@ const CONTEXT_PATTERNS: Array<{
   amountGroup: number;
 }> = [
   {
-    regex: /(?:цена|price|стоимость)[:\s\-–—]*(\d[\d ,.]*)[ \t]*€/i,
+    regex: /(?:цена|price|стоимость)[:\s\-–—]*(\d(?:\d|[,. ](?=\d))*)[ \t]*€/i,
     currency: "EUR",
     amountGroup: 1,
   },
   {
-    regex: /(?:цена|price|стоимость)[:\s\-–—]*€?[ \t]*(\d[\d ,.]*)/i,
+    regex: /(?:цена|price|стоимость)[:\s\-–—]*€?[ \t]*(\d(?:\d|[,. ](?=\d))*)/i,
     currency: "EUR",
     amountGroup: 1,
   },
