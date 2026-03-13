@@ -208,15 +208,17 @@ export function SearchInput() {
                       setInputValue(term);
                       executeSearch(term);
                     }}
+                    className="[&>svg:last-child]:hidden"
                   >
                     <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="truncate flex-1">{term}</span>
-                    <button
+                    <div
+                      role="button"
                       onClick={(e) => handleRemoveRecent(e, term)}
-                      className="ml-auto p-0.5 rounded hover:bg-accent shrink-0"
+                      className="ml-auto p-0.5 rounded hover:bg-accent shrink-0 pointer-events-auto cursor-pointer"
                     >
-                      <X className="h-3 w-3 text-muted-foreground" />
-                    </button>
+                      <X className="h-3 w-3 text-muted-foreground pointer-events-none" />
+                    </div>
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -228,6 +230,7 @@ export function SearchInput() {
                   <CommandItem
                     value={`search-${inputValue}`}
                     onSelect={() => executeSearch(inputValue)}
+                    className="[&>svg:last-child]:hidden"
                   >
                     <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span>
@@ -245,6 +248,7 @@ export function SearchInput() {
                           key={cat.slug}
                           value={`cat-${cat.slug}`}
                           onSelect={() => selectCategory(cat.slug)}
+                          className="[&>svg:last-child]:hidden"
                         >
                           {cat.icon ? (
                             <span className="shrink-0">{cat.icon}</span>
