@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { Command as CommandPrimitive } from "cmdk";
 import { Search, X, Clock, FolderOpen } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
 import {
   Command,
-  CommandInput,
   CommandList,
   CommandGroup,
   CommandItem,
   CommandSeparator,
 } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import type { Category } from "@/types";
 
 // --- localStorage helpers ---
@@ -142,10 +143,13 @@ export function SearchInput() {
 
   const selectCategory = useCallback(
     (slug: string) => {
-      setFilter("category", slug);
-      setFilter("search", undefined);
       setInputValue("");
       setOpen(false);
+      // Use a single router.push by clearing search and setting category together
+      // setFilter calls router.push, so we clear search first then set category
+      setFilter("search", undefined);
+      // Small delay to avoid two competing router.push calls
+      setTimeout(() => setFilter("category", slug), 0);
     },
     [setFilter]
   );
@@ -168,26 +172,28 @@ export function SearchInput() {
     <div ref={containerRef} className="relative flex-1">
       <Command shouldFilter={false} className="bg-transparent overflow-visible">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-          <CommandInput
-            placeholder="Search listings..."
-            value={inputValue}
-            onValueChange={(v) => {
-              setInputValue(v);
-              if (!open) setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                executeSearch(inputValue);
-              }
-              if (e.key === "Escape") {
-                setOpen(false);
-              }
-            }}
-            className="pl-6"
-          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <CommandPrimitive.Input asChild>
+            <Input
+              placeholder="Search listings..."
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                if (!open) setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  executeSearch(inputValue);
+                }
+                if (e.key === "Escape") {
+                  setOpen(false);
+                }
+              }}
+              className="pl-9"
+            />
+          </CommandPrimitive.Input>
         </div>
 
         {open && (showRecent || showSuggestions) && (
@@ -202,15 +208,12 @@ export function SearchInput() {
                       setInputValue(term);
                       executeSearch(term);
                     }}
-                    className="flex items-center justify-between"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate">{term}</span>
-                    </div>
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate flex-1">{term}</span>
                     <button
                       onClick={(e) => handleRemoveRecent(e, term)}
-                      className="ml-2 p-0.5 rounded hover:bg-muted shrink-0"
+                      className="ml-auto p-0.5 rounded hover:bg-accent shrink-0"
                     >
                       <X className="h-3 w-3 text-muted-foreground" />
                     </button>
