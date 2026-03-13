@@ -75,10 +75,13 @@ export function ListingCard({
   };
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
       className={cn(
-        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden flex flex-col relative group",
+        "w-full rounded-lg border text-left transition-colors hover:bg-accent/50 overflow-hidden flex flex-col relative group cursor-pointer",
         isSelected && "border-primary bg-accent"
       )}
     >
@@ -172,6 +175,6 @@ export function ListingCard({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
