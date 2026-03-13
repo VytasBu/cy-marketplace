@@ -123,10 +123,11 @@ export async function GET(request: NextRequest) {
     query = query.gte("raw_date", since.toISOString());
   }
 
-  // Text search
+  // Text search — use full-text search for word-boundary matching
+  // ("table" won't match "comfortable", "suitable", etc.)
   if (search) {
     query = query.or(
-      `description_en.ilike.%${search}%,description_original.ilike.%${search}%`
+      `description_en.wfts(english).${search},description_original.wfts(simple).${search}`
     );
   }
 

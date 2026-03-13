@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useFilters } from "@/lib/hooks/use-filters";
 
@@ -8,9 +8,18 @@ export function PriceRangeFilter() {
   const { filters, setFilter } = useFilters();
   const [min, setMin] = useState(filters.priceMin?.toString() || "");
   const [max, setMax] = useState(filters.priceMax?.toString() || "");
+  const isUserInput = useRef(false);
 
-  // Debounce
+  // Sync: URL → local state (external changes like clearFilters)
   useEffect(() => {
+    isUserInput.current = false;
+    setMin(filters.priceMin?.toString() || "");
+    setMax(filters.priceMax?.toString() || "");
+  }, [filters.priceMin, filters.priceMax]);
+
+  // Debounce: local state → URL (only for user input, not programmatic syncs)
+  useEffect(() => {
+    if (!isUserInput.current) return;
     const timeout = setTimeout(() => {
       const minVal = min ? Number(min) : undefined;
       const maxVal = max ? Number(max) : undefined;
@@ -28,7 +37,10 @@ export function PriceRangeFilter() {
           type="number"
           placeholder="Min"
           value={min}
-          onChange={(e) => setMin(e.target.value)}
+          onChange={(e) => {
+            isUserInput.current = true;
+            setMin(e.target.value);
+          }}
           className="h-8 text-sm"
         />
         <span className="text-muted-foreground text-sm">-</span>
@@ -36,7 +48,10 @@ export function PriceRangeFilter() {
           type="number"
           placeholder="Max"
           value={max}
-          onChange={(e) => setMax(e.target.value)}
+          onChange={(e) => {
+            isUserInput.current = true;
+            setMax(e.target.value);
+          }}
           className="h-8 text-sm"
         />
       </div>

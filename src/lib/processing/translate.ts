@@ -62,13 +62,15 @@ export async function translateToEnglish(
 }
 
 /**
- * Simple heuristic: if >60% of word characters are Latin, it's likely English.
+ * Check if text is likely already English.
+ * If ANY Cyrillic characters are present, always translate — brand names
+ * like "iPhone 13 Pro" inflate the Latin ratio in mixed Russian-English text.
  */
 function isLikelyEnglish(text: string): boolean {
   const words = text.replace(/[^a-zA-Zа-яА-ЯёЁ\s]/g, "").trim();
   if (!words) return true;
-  const latinChars = (words.match(/[a-zA-Z]/g) || []).length;
-  const totalChars = (words.match(/[a-zA-Zа-яА-ЯёЁ]/g) || []).length;
-  if (totalChars === 0) return true;
-  return latinChars / totalChars > 0.6;
+  // If any Cyrillic characters exist, always translate
+  const hasCyrillic = /[а-яА-ЯёЁ]/.test(words);
+  if (hasCyrillic) return false;
+  return true;
 }
