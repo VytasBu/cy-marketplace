@@ -113,7 +113,18 @@ const POSITIVE_CONTEXT =
   /(?:selling (?:for|at)?|asking|now|продам\s*(?:за)?|отда[мю]\s*(?:за)?|прошу|(?<!\w)цена|(?<!\w)стоимость)[ \t:]*$/i;
 
 function parseAmount(raw: string): number | null {
-  const cleaned = raw.replace(/\s/g, "").replace(",", ".");
+  // Remove whitespace
+  let cleaned = raw.replace(/\s/g, "");
+  // Determine if comma is a thousands separator or decimal separator:
+  // "54,000" → thousands (3 digits after comma) → remove comma
+  // "54,50" or "54,5" → decimal → replace with dot
+  if (/,\d{3}(?!\d)/.test(cleaned)) {
+    // Thousands separator — remove all commas
+    cleaned = cleaned.replace(/,/g, "");
+  } else {
+    // Decimal separator — replace comma with dot
+    cleaned = cleaned.replace(",", ".");
+  }
   const amount = parseFloat(cleaned);
   // Must be a reasonable marketplace price (>= 5, < 10M)
   if (!isNaN(amount) && amount >= 5 && amount < 10_000_000) {
