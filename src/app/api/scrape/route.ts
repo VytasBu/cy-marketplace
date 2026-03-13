@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       processed: result.processed,
       errors: result.errors,
       oldestId: result.oldestId,
+      batches: result.batches,
     });
   } catch (error) {
     console.error("Scrape error:", error);

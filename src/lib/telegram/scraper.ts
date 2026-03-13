@@ -21,6 +21,7 @@ export async function scrapeChannel(
   processed: number;
   errors: number;
   oldestId: number | null;
+  batches: number;
 }> {
   const supabase = createServiceClient();
   const channelUsername = process.env.TELEGRAM_CHANNEL_USERNAME;
@@ -36,7 +37,7 @@ export async function scrapeChannel(
     .eq("username", channelUsername)
     .single();
 
-  const lastMessageId = channelData?.last_scraped_message_id || 0;
+  let lastMessageId = channelData?.last_scraped_message_id || 0;
 
   // Ensure channel record exists
   if (!channelData) {
@@ -51,144 +52,171 @@ export async function scrapeChannel(
   }
 
   const client = await getTelegramClient();
-  let processed = 0;
-  let errors = 0;
-  let maxMessageId = lastMessageId;
-  let minMessageId: number | null = null;
+  let totalProcessed = 0;
+  let totalErrors = 0;
+  let globalMinMessageId: number | null = null;
+  let batches = 0;
+
+  // Time budget: stop looping 5s before the 60s Vercel timeout
+  const startTime = Date.now();
+  const TIME_BUDGET_MS = 55_000;
 
   try {
-    // Raw API messages per batch. Albums use multiple API messages per post
-    // (e.g. 4 photos = 4 messages), so we need headroom.
-    // With 6-min cron: ~500 msgs/hour capacity vs ~9 posts/hour actual.
+    // Messages per batch. Albums use multiple API messages per post
+    // (e.g. 4 photos = 4 messages). We loop batches until caught up.
     const FETCH_LIMIT = 50;
 
     // Bots to ignore
     const IGNORED_USERNAMES = ["chatkeeperbot"];
-    const messages: Api.Message[] = [];
-
-    if (direction === "forward") {
-      // Forward: fetch messages NEWER than lastMessageId
-      for await (const message of client.iterMessages(channelUsername, {
-        minId: lastMessageId,
-        limit: FETCH_LIMIT,
-      })) {
-        if (message instanceof Api.Message) {
-          // Track ALL message IDs for bookmark (prevents stuck loops)
-          if (message.id > maxMessageId) maxMessageId = message.id;
-          if (minMessageId === null || message.id < minMessageId)
-            minMessageId = message.id;
-          messages.push(message);
-        }
-      }
-    } else {
-      // Backward: fetch messages OLDER than offsetId
-      const iterOpts: { limit: number; offsetId?: number } = {
-        limit: FETCH_LIMIT,
-      };
-      if (offsetId) {
-        iterOpts.offsetId = offsetId;
-      }
-      for await (const message of client.iterMessages(
-        channelUsername,
-        iterOpts
-      )) {
-        if (message instanceof Api.Message) {
-          if (message.id > maxMessageId) maxMessageId = message.id;
-          if (minMessageId === null || message.id < minMessageId)
-            minMessageId = message.id;
-          messages.push(message);
-        }
-      }
-    }
-
-    // Filter out bot messages (still track their IDs for bookmark above)
-    const filteredMessages: Api.Message[] = [];
-    for (const msg of messages) {
-      let isBot = false;
-      if (msg.fromId) {
-        try {
-          const sender = await client.getEntity(msg.fromId);
-          if (sender instanceof Api.User && sender.username) {
-            isBot = IGNORED_USERNAMES.includes(sender.username.toLowerCase());
-          }
-        } catch {
-          // Can't resolve sender, keep the message
-        }
-      }
-      if (!isBot) {
-        filteredMessages.push(msg);
-      }
-    }
-
-    // Process in chronological order (oldest first)
-    filteredMessages.reverse();
-
-    // Group filtered messages by groupedId for album handling
-    const groupedMessages = new Map<string, Api.Message[]>();
-    const standaloneMessages: Api.Message[] = [];
-
-    for (const msg of filteredMessages) {
-      if (msg.groupedId) {
-        const groupKey = msg.groupedId.toString();
-        if (!groupedMessages.has(groupKey)) {
-          groupedMessages.set(groupKey, []);
-        }
-        groupedMessages.get(groupKey)!.push(msg);
-      } else {
-        standaloneMessages.push(msg);
-      }
-    }
 
     // Small delay helper to be gentle on the API
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    // Process standalone messages (skip text-less ones — no description to show)
-    for (const msg of standaloneMessages) {
-      if (!msg.message?.trim()) continue;
-      try {
-        const raw = await extractMessage(client, msg, channelUsername);
-        if (raw) {
-          await processListing(raw, channelUsername);
-          processed++;
-        }
-        await sleep(500); // gentle rate limiting
-      } catch (err) {
-        console.error(`Error processing message ${msg.id}:`, err);
-        errors++;
-      }
-    }
+    // Loop batches until we've consumed all new messages or run out of time
+    while (Date.now() - startTime < TIME_BUDGET_MS) {
+      const messages: Api.Message[] = [];
+      let batchMaxId = lastMessageId;
 
-    // Process grouped messages (albums)
-    for (const [, group] of groupedMessages) {
-      try {
-        const raw = await extractGroupedMessages(
-          client,
-          group,
-          channelUsername
-        );
-        if (raw) {
-          await processListing(raw, channelUsername);
-          processed++;
+      if (direction === "forward") {
+        // Forward: fetch messages NEWER than lastMessageId
+        for await (const message of client.iterMessages(channelUsername, {
+          minId: lastMessageId,
+          limit: FETCH_LIMIT,
+        })) {
+          if (message instanceof Api.Message) {
+            if (message.id > batchMaxId) batchMaxId = message.id;
+            if (globalMinMessageId === null || message.id < globalMinMessageId)
+              globalMinMessageId = message.id;
+            messages.push(message);
+          }
         }
-        await sleep(500); // gentle rate limiting
-      } catch (err) {
-        console.error(`Error processing grouped messages:`, err);
-        errors++;
+      } else {
+        // Backward: fetch messages OLDER than offsetId
+        const iterOpts: { limit: number; offsetId?: number } = {
+          limit: FETCH_LIMIT,
+        };
+        if (offsetId) {
+          iterOpts.offsetId = offsetId;
+        }
+        for await (const message of client.iterMessages(
+          channelUsername,
+          iterOpts
+        )) {
+          if (message instanceof Api.Message) {
+            if (message.id > batchMaxId) batchMaxId = message.id;
+            if (globalMinMessageId === null || message.id < globalMinMessageId)
+              globalMinMessageId = message.id;
+            messages.push(message);
+          }
+        }
       }
-    }
 
-    // Update last scraped message ID (forward bookmark)
-    if (maxMessageId > lastMessageId) {
-      await supabase
-        .from("telegram_channels")
-        .update({ last_scraped_message_id: maxMessageId })
-        .eq("username", channelUsername);
+      // No more messages — we're caught up
+      if (messages.length === 0) break;
+
+      batches++;
+
+      // Filter out bot messages (still track their IDs for bookmark above)
+      const filteredMessages: Api.Message[] = [];
+      for (const msg of messages) {
+        let isBot = false;
+        if (msg.fromId) {
+          try {
+            const sender = await client.getEntity(msg.fromId);
+            if (sender instanceof Api.User && sender.username) {
+              isBot = IGNORED_USERNAMES.includes(
+                sender.username.toLowerCase()
+              );
+            }
+          } catch {
+            // Can't resolve sender, keep the message
+          }
+        }
+        if (!isBot) {
+          filteredMessages.push(msg);
+        }
+      }
+
+      // Process in chronological order (oldest first)
+      filteredMessages.reverse();
+
+      // Group filtered messages by groupedId for album handling
+      const groupedMessages = new Map<string, Api.Message[]>();
+      const standaloneMessages: Api.Message[] = [];
+
+      for (const msg of filteredMessages) {
+        if (msg.groupedId) {
+          const groupKey = msg.groupedId.toString();
+          if (!groupedMessages.has(groupKey)) {
+            groupedMessages.set(groupKey, []);
+          }
+          groupedMessages.get(groupKey)!.push(msg);
+        } else {
+          standaloneMessages.push(msg);
+        }
+      }
+
+      // Process standalone messages (skip text-less ones)
+      for (const msg of standaloneMessages) {
+        if (!msg.message?.trim()) continue;
+        if (Date.now() - startTime >= TIME_BUDGET_MS) break;
+        try {
+          const raw = await extractMessage(client, msg, channelUsername);
+          if (raw) {
+            await processListing(raw, channelUsername);
+            totalProcessed++;
+          }
+          await sleep(300);
+        } catch (err) {
+          console.error(`Error processing message ${msg.id}:`, err);
+          totalErrors++;
+        }
+      }
+
+      // Process grouped messages (albums)
+      for (const [, group] of groupedMessages) {
+        if (Date.now() - startTime >= TIME_BUDGET_MS) break;
+        try {
+          const raw = await extractGroupedMessages(
+            client,
+            group,
+            channelUsername
+          );
+          if (raw) {
+            await processListing(raw, channelUsername);
+            totalProcessed++;
+          }
+          await sleep(300);
+        } catch (err) {
+          console.error(`Error processing grouped messages:`, err);
+          totalErrors++;
+        }
+      }
+
+      // Update bookmark after each batch so progress is saved even if we time out
+      if (batchMaxId > lastMessageId) {
+        await supabase
+          .from("telegram_channels")
+          .update({ last_scraped_message_id: batchMaxId })
+          .eq("username", channelUsername);
+        lastMessageId = batchMaxId;
+      }
+
+      // For backward scraping, update offsetId for next batch
+      if (direction === "backward" && globalMinMessageId !== null) {
+        offsetId = globalMinMessageId;
+      }
     }
   } finally {
     await disconnectTelegram();
   }
 
-  return { processed, errors, oldestId: minMessageId };
+  return {
+    processed: totalProcessed,
+    errors: totalErrors,
+    oldestId: globalMinMessageId,
+    batches,
+  };
 }
 
 async function extractMessage(
