@@ -45,7 +45,7 @@ function useCategoryBreadcrumb(slug: string | undefined) {
 
 export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) {
   const { listings, total, loading, hasMore, loadMore } = useListings();
-  const { filters, setFilter } = useFilters();
+  const { filters, setFilters } = useFilters();
   const observerRef = useRef<HTMLDivElement>(null);
   const categoryBreadcrumb = useCategoryBreadcrumb(filters.category);
 
@@ -86,37 +86,37 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
 
       {/* Context header — search query or category breadcrumb */}
       {(filters.search || filters.category) && (
-        <div className="px-3 pt-3 pb-1 flex items-start gap-2">
+        <div className="px-3 pt-3 pb-1 flex items-center gap-2">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="shrink-0 h-7 w-7 mt-0.5"
+            className="shrink-0 h-9 w-9"
             onClick={() => {
-              if (filters.search) setFilter("search", undefined);
-              if (filters.category) setFilter("category", undefined);
+              setFilters({ search: undefined, category: undefined });
             }}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
-            {filters.search && (
+            {filters.search ? (
               <p className="font-semibold text-base leading-tight">
                 Search results for &ldquo;{filters.search}&rdquo;
               </p>
-            )}
-            {filters.category && categoryBreadcrumb && (
+            ) : filters.category && categoryBreadcrumb ? (
               <p className="font-semibold text-base leading-tight">
+                {categoryBreadcrumb[categoryBreadcrumb.length - 1].icon && (
+                  <span className="mr-1">{categoryBreadcrumb[categoryBreadcrumb.length - 1].icon}</span>
+                )}
                 {categoryBreadcrumb.map((part, i) => (
                   <span key={i}>
                     {i > 0 && (
                       <span className="text-muted-foreground font-normal"> › </span>
                     )}
-                    {part.icon && <span className="mr-1">{part.icon}</span>}
                     {part.name}
                   </span>
                 ))}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       )}

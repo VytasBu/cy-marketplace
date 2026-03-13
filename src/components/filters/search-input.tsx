@@ -89,7 +89,7 @@ function buildCategorySuggestions(
 }
 
 export function SearchInput() {
-  const { filters, setFilter } = useFilters();
+  const { filters, setFilter, setFilters } = useFilters();
   const [inputValue, setInputValue] = useState(filters.search || "");
   const [open, setOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -135,23 +135,21 @@ export function SearchInput() {
         addRecentSearch(trimmed);
         setRecentSearches(getRecentSearches());
       }
-      setFilter("search", trimmed || undefined);
+      // Atomically set search and clear category
+      setFilters({ search: trimmed || undefined, category: undefined });
       setOpen(false);
     },
-    [setFilter]
+    [setFilters]
   );
 
   const selectCategory = useCallback(
     (slug: string) => {
       setInputValue("");
       setOpen(false);
-      // Use a single router.push by clearing search and setting category together
-      // setFilter calls router.push, so we clear search first then set category
-      setFilter("search", undefined);
-      // Small delay to avoid two competing router.push calls
-      setTimeout(() => setFilter("category", slug), 0);
+      // Atomically clear search and set category in one router.push
+      setFilters({ search: undefined, category: slug });
     },
-    [setFilter]
+    [setFilters]
   );
 
   const handleRemoveRecent = useCallback(

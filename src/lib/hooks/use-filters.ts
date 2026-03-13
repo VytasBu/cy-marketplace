@@ -7,6 +7,7 @@ import type { ListingsFilter } from "@/types";
 export function useFilters(): {
   filters: ListingsFilter;
   setFilter: (key: keyof ListingsFilter, value: string | number | undefined) => void;
+  setFilters: (updates: Partial<Record<keyof ListingsFilter, string | number | undefined>>) => void;
   clearFilters: () => void;
   buildQueryString: () => string;
 } {
@@ -52,6 +53,26 @@ export function useFilters(): {
     [searchParams, router, pathname]
   );
 
+  const setFilters = useCallback(
+    (updates: Partial<Record<keyof ListingsFilter, string | number | undefined>>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      let resetPage = false;
+
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === undefined || value === "" || value === "all") {
+          params.delete(key);
+        } else {
+          params.set(key, String(value));
+        }
+        if (key !== "page") resetPage = true;
+      }
+
+      if (resetPage) params.delete("page");
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
+
   const clearFilters = useCallback(() => {
     router.push(pathname, { scroll: false });
   }, [router, pathname]);
@@ -60,5 +81,5 @@ export function useFilters(): {
     return searchParams.toString();
   }, [searchParams]);
 
-  return { filters, setFilter, clearFilters, buildQueryString };
+  return { filters, setFilter, setFilters, clearFilters, buildQueryString };
 }
