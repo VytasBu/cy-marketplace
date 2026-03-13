@@ -57,10 +57,10 @@ export async function scrapeChannel(
   let minMessageId: number | null = null;
 
   try {
-    // 15 raw API messages per batch. Albums use multiple API messages per post
+    // Raw API messages per batch. Albums use multiple API messages per post
     // (e.g. 4 photos = 4 messages), so we need headroom.
-    // With 6-min cron: ~150 msgs/hour capacity vs ~9 posts/hour actual.
-    const FETCH_LIMIT = 15;
+    // With 6-min cron: ~500 msgs/hour capacity vs ~9 posts/hour actual.
+    const FETCH_LIMIT = 50;
 
     // Bots to ignore
     const IGNORED_USERNAMES = ["chatkeeperbot"];
