@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useListings } from "@/lib/hooks/use-listings";
+import { useFilters } from "@/lib/hooks/use-filters";
 import { ListingCard } from "@/components/listing/listing-card";
 import { SearchInput } from "@/components/filters/search-input";
 import { SaveSearchButton } from "@/components/filters/save-search-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal } from "lucide-react";
-import type { Listing } from "@/types";
+import { ArrowLeft, SlidersHorizontal } from "lucide-react";
+import type { Category, Listing } from "@/types";
 
 interface FeedProps {
   onSelectListing: (listing: Listing) => void;
@@ -16,9 +17,37 @@ interface FeedProps {
   onOpenFilters: () => void;
 }
 
+function useCategoryBreadcrumb(slug: string | undefined) {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => {});
+  }, []);
+
+  if (!slug || categories.length === 0) return null;
+
+  const bySlug = new Map(categories.map((c) => [c.slug, c]));
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const cat = bySlug.get(slug);
+  if (!cat) return null;
+
+  const parts: { name: string; icon: string | null }[] = [];
+  let current: Category | undefined = cat;
+  while (current) {
+    parts.unshift({ name: current.name, icon: current.icon });
+    current = current.parent_id ? byId.get(current.parent_id) : undefined;
+  }
+  return parts;
+}
+
 export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) {
   const { listings, total, loading, hasMore, loadMore } = useListings();
+  const { filters, setFilter } = useFilters();
   const observerRef = useRef<HTMLDivElement>(null);
+  const categoryBreadcrumb = useCategoryBreadcrumb(filters.category);
 
   // Infinite scroll
   const handleObserver = useCallback(
@@ -54,6 +83,43 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
           <SlidersHorizontal className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Context header — search query or category breadcrumb */}
+      {(filters.search || filters.category) && (
+        <div className="px-3 pt-3 pb-1 flex items-start gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 h-7 w-7 mt-0.5"
+            onClick={() => {
+              if (filters.search) setFilter("search", undefined);
+              if (filters.category) setFilter("category", undefined);
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0">
+            {filters.search && (
+              <p className="font-semibold text-base leading-tight">
+                Search results for &ldquo;{filters.search}&rdquo;
+              </p>
+            )}
+            {filters.category && categoryBreadcrumb && (
+              <p className="font-semibold text-base leading-tight">
+                {categoryBreadcrumb.map((part, i) => (
+                  <span key={i}>
+                    {i > 0 && (
+                      <span className="text-muted-foreground font-normal"> › </span>
+                    )}
+                    {part.icon && <span className="mr-1">{part.icon}</span>}
+                    {part.name}
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Results count */}
       <div className="px-3 py-2 text-sm text-muted-foreground">
