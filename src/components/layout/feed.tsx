@@ -60,20 +60,22 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
         {loading ? "Loading..." : `${total} listings found`}
       </div>
 
-      {/* Listing cards */}
-      <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
+      {/* Listing cards — grid */}
+      <div className="flex-1 overflow-y-auto px-3 pb-3">
         {loading && listings.length === 0 ? (
           // Loading skeletons
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex gap-3 p-3 rounded-lg border">
-              <Skeleton className="w-24 h-24 rounded-md shrink-0" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-1/2" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="rounded-lg border overflow-hidden">
+                <Skeleton className="aspect-square w-full" />
+                <div className="p-2.5 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : listings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <p className="text-lg font-medium">No listings found</p>
@@ -81,14 +83,16 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
           </div>
         ) : (
           <>
-            {listings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                isSelected={selectedId === listing.id}
-                onClick={() => onSelectListing(listing)}
-              />
-            ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {listings.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  isSelected={selectedId === listing.id}
+                  onClick={() => onSelectListing(listing)}
+                />
+              ))}
+            </div>
             {/* Infinite scroll trigger */}
             <div ref={observerRef} className="h-4" />
             {loading && listings.length > 0 && (

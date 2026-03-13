@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
     .from("listings")
     .select("*, category:categories(*)", { count: "exact" })
     .eq("is_duplicate", false)
-    .not("photos", "eq", "{}"); // Hide listings with no photos
+    .not("photos", "eq", "{}") // Hide listings with no photos
+    .neq("telegram_sender_username", "cyprus_faqbot"); // Exclude bot posts
 
   // Filter by specific IDs (for saved listings page)
   if (ids) {
