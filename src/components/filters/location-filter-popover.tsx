@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, MapPin } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +42,7 @@ export function LocationFilterPopover() {
             : "border-border text-foreground"
         )}
       >
+        <MapPin className="h-3.5 w-3.5 opacity-60" />
         {filters.location || "Location"}
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </PopoverTrigger>

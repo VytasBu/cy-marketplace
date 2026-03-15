@@ -11,7 +11,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, LayoutGrid } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
@@ -105,6 +105,7 @@ export function CategoryFilterPopover() {
             : "border-border text-foreground"
         )}
       >
+        <LayoutGrid className="h-3.5 w-3.5 opacity-60" />
         {selectedCategory
           ? `${selectedCategory.icon || ""} ${selectedCategory.name}`.trim()
           : "Category"}

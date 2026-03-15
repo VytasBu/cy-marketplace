@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Calendar } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,7 @@ export function DateFilterPopover() {
             : "border-border text-foreground"
         )}
       >
+        <Calendar className="h-3.5 w-3.5 opacity-60" />
         {isActive ? currentLabel : "Date"}
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </PopoverTrigger>

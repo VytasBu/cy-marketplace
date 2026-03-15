@@ -7,7 +7,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Euro } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +77,7 @@ export function PriceFilterPopover() {
             : "border-border text-foreground"
         )}
       >
+        <Euro className="h-3.5 w-3.5 opacity-60" />
         {triggerLabel}
         <ChevronDown className="h-3.5 w-3.5 opacity-60" />
       </PopoverTrigger>
