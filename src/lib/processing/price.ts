@@ -121,14 +121,19 @@ const POSITIVE_CONTEXT =
 function parseAmount(raw: string): number | null {
   // Remove whitespace
   let cleaned = raw.replace(/\s/g, "");
-  // Determine if comma is a thousands separator or decimal separator:
-  // "54,000" → thousands (3 digits after comma) → remove comma
-  // "54,50" or "54,5" → decimal → replace with dot
-  if (/,\d{3}(?!\d)/.test(cleaned)) {
-    // Thousands separator — remove all commas
+  // Determine if dot is a thousands separator:
+  // "7.000" → thousands (dot + exactly 3 digits at end) → remove dots
+  // "7.50" → decimal (dot + 1-2 digits) → keep as-is
+  if (/\.\d{3}(?!\d)/.test(cleaned)) {
+    // Dot is thousands separator (e.g. "7.000" = 7000, "1.234.567" = 1234567)
+    // If there's also a comma, it's the decimal part (e.g. "7.000,50")
+    cleaned = cleaned.replace(/\./g, "");
+    cleaned = cleaned.replace(",", ".");
+  } else if (/,\d{3}(?!\d)/.test(cleaned)) {
+    // Comma is thousands separator (e.g. "54,000" = 54000)
     cleaned = cleaned.replace(/,/g, "");
   } else {
-    // Decimal separator — replace comma with dot
+    // Comma is decimal separator (e.g. "54,50" → "54.50")
     cleaned = cleaned.replace(",", ".");
   }
   const amount = parseFloat(cleaned);
