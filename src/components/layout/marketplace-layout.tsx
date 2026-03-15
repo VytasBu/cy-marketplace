@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { FiltersSidebar } from "./filters-sidebar";
-import { FiltersDrawer } from "./filters-drawer";
 import { Feed } from "./feed";
 import { DetailPanel } from "./detail-panel";
 import type { Listing } from "@/types";
 
 export function MarketplaceLayout() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -58,23 +55,11 @@ export function MarketplaceLayout() {
 
   return (
     <div className="flex h-[calc(100vh-56px)] overflow-hidden">
-      {/* Filters sidebar - desktop only */}
-      <aside className="hidden lg:block w-[260px] border-r overflow-y-auto shrink-0">
-        <FiltersSidebar />
-      </aside>
-
-      {/* Filters drawer - mobile only */}
-      <FiltersDrawer
-        open={showMobileFilters}
-        onOpenChange={setShowMobileFilters}
-      />
-
-      {/* Feed - center column */}
+      {/* Feed - main column */}
       <main className="flex-1 min-w-0 overflow-y-auto">
         <Feed
           onSelectListing={handleSelectListing}
           selectedId={selectedListing?.id || null}
-          onOpenFilters={() => setShowMobileFilters(true)}
         />
       </main>
 

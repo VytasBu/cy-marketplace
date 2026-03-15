@@ -20,23 +20,20 @@ export function SortSelect() {
   const { filters, setFilter } = useFilters();
 
   return (
-    <div>
-      <h3 className="font-medium text-sm mb-2">Sort by</h3>
-      <Select
-        value={filters.sort || "newest"}
-        onValueChange={(value) => setFilter("sort", value ?? undefined)}
-      >
-        <SelectTrigger className="h-8 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {SORT_OPTIONS.map(({ value, label }) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={filters.sort || "newest"}
+      onValueChange={(value) => setFilter("sort", value ?? undefined)}
+    >
+      <SelectTrigger className="rounded-full border-border px-3 py-1.5 text-sm font-medium h-auto cursor-pointer">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {SORT_OPTIONS.map(({ value, label }) => (
+          <SelectItem key={value} value={value}>
+            {label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

@@ -6,15 +6,15 @@ import { useFilters } from "@/lib/hooks/use-filters";
 import { ListingCard } from "@/components/listing/listing-card";
 import { SearchInput } from "@/components/filters/search-input";
 import { SaveSearchButton } from "@/components/filters/save-search-button";
+import { FilterBar } from "@/components/filters/filter-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Category, Listing } from "@/types";
 
 interface FeedProps {
   onSelectListing: (listing: Listing) => void;
   selectedId: string | null;
-  onOpenFilters: () => void;
 }
 
 function useCategoryBreadcrumb(slug: string | undefined) {
@@ -43,7 +43,7 @@ function useCategoryBreadcrumb(slug: string | undefined) {
   return parts;
 }
 
-export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) {
+export function Feed({ onSelectListing, selectedId }: FeedProps) {
   const { listings, total, loading, hasMore, loadMore } = useListings();
   const { filters, setFilters } = useFilters();
   const observerRef = useRef<HTMLDivElement>(null);
@@ -70,19 +70,14 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search + mobile filter button */}
+      {/* Search bar */}
       <div className="sticky top-0 z-10 bg-background border-b p-3 flex gap-2">
         <SearchInput />
         <SaveSearchButton />
-        <Button
-          variant="outline"
-          size="icon"
-          className="lg:hidden shrink-0"
-          onClick={onOpenFilters}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-        </Button>
       </div>
+
+      {/* Filter bar */}
+      <FilterBar />
 
       {/* Context header — search query or category breadcrumb */}
       {(filters.search || filters.category) && (
@@ -130,7 +125,7 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
       <div className="flex-1 overflow-y-auto px-3 pb-3">
         {loading && listings.length === 0 ? (
           // Loading skeletons
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="rounded-lg border overflow-hidden">
                 <Skeleton className="aspect-square w-full" />
@@ -149,7 +144,7 @@ export function Feed({ onSelectListing, selectedId, onOpenFilters }: FeedProps) 
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {listings.map((listing) => (
                 <ListingCard
                   key={listing.id}

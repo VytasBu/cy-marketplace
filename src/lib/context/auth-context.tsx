@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithOtp: (email: string) => Promise<{ error: string | null }>;
+  signInWithGoogle: () => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   showLoginDialog: boolean;
   setShowLoginDialog: (show: boolean) => void;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signInWithOtp: async () => ({ error: null }),
+  signInWithGoogle: async () => ({ error: null }),
   signOut: async () => {},
   showLoginDialog: false,
   setShowLoginDialog: () => {},
@@ -66,13 +68,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [supabase]
   );
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    return { error: error?.message ?? null };
+  }, [supabase]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithOtp, signOut, showLoginDialog, setShowLoginDialog }}>
+    <AuthContext.Provider value={{ user, loading, signInWithOtp, signInWithGoogle, signOut, showLoginDialog, setShowLoginDialog }}>
       {children}
     </AuthContext.Provider>
   );
