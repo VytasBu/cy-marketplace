@@ -2,17 +2,11 @@
 
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { Sun, Moon, Monitor } from "lucide-react"
+import { Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-const themes = [
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
-  { value: "system", label: "System", icon: Monitor },
-] as const
-
 export function ThemeSwitcher() {
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => setMounted(true), [])
@@ -25,20 +19,17 @@ export function ThemeSwitcher() {
     )
   }
 
-  const currentIndex = themes.findIndex((t) => t.value === theme)
-  const next = themes[(currentIndex + 1) % themes.length]
-  const CurrentIcon =
-    themes.find((t) => t.value === theme)?.icon ?? Sun
+  const isDark = resolvedTheme === "dark"
 
   return (
     <Button
       variant="ghost"
       size="icon-xs"
-      onClick={() => setTheme(next.value)}
-      aria-label={`Switch to ${next.label} theme`}
-      title={`Current: ${theme} — click for ${next.label}`}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+      title={`Current: ${resolvedTheme} — click to toggle`}
     >
-      <CurrentIcon className="size-3.5" />
+      {isDark ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
     </Button>
   )
 }
