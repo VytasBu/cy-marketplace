@@ -54,7 +54,7 @@ export function UserMenu() {
       </Button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-background shadow-lg z-50 py-1">
+        <div className="absolute right-0 top-full mt-1 w-48 rounded-2xl border bg-background shadow-lg z-50 py-1">
           <button
             onClick={() => handleNav("/saved")}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"

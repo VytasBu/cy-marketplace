@@ -86,7 +86,7 @@ export function LoginDialog() {
   return (
     <Dialog open={showLoginDialog} onOpenChange={handleOpenChange}>
       <DialogTrigger
-        render={<Button variant="outline" size="sm" />}
+        render={<Button variant="default" size="sm" />}
         onClick={() => setShowLoginDialog(true)}
       >
         <LogIn className="size-4" />
