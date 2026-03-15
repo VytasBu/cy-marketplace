@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/context/auth-context";
 import { LoginDialog } from "@/components/auth/login-dialog";
 import { UserMenu } from "@/components/auth/user-menu";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export function Header() {
   const { user, loading } = useAuth();
@@ -17,7 +18,8 @@ export function Header() {
           </span>
         </a>
       </div>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <ThemeSwitcher />
         {!loading && (user ? <UserMenu /> : <LoginDialog />)}
       </div>
     </header>
