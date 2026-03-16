@@ -26,6 +26,7 @@ export function HomepageView({
   const pageRef = useRef(1);
   const loadingMoreRef = useRef(false);
   const observerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -72,7 +73,7 @@ export function HomepageView({
           loadMore();
         }
       },
-      { threshold: 0.1, rootMargin: "0px 0px 400px 0px" }
+      { root: scrollRef.current, threshold: 0.1, rootMargin: "0px 0px 400px 0px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -92,7 +93,7 @@ export function HomepageView({
   );
 
   return (
-    <div className="bg-background rounded-3xl py-9 overflow-y-auto overflow-x-hidden">
+    <div ref={scrollRef} className="h-full bg-background rounded-3xl py-9 overflow-y-auto overflow-x-hidden">
       <div className="max-w-[1240px] mx-auto px-6 space-y-12">
         {/* Browse categories */}
         <section className="space-y-6">

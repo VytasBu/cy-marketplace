@@ -45,6 +45,7 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
   const { listings, total, loading, hasMore, loadMore } = useListings();
   const { filters, setFilters } = useFilters();
   const observerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const categoryBreadcrumb = useCategoryBreadcrumb(filters.category);
 
   // Infinite scroll
@@ -59,11 +60,14 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
   );
 
   useEffect(() => {
+    const el = observerRef.current;
+    if (!el) return;
     const observer = new IntersectionObserver(handleObserver, {
+      root: scrollRef.current,
       threshold: 0.1,
       rootMargin: "0px 0px 400px 0px",
     });
-    if (observerRef.current) observer.observe(observerRef.current);
+    observer.observe(el);
     return () => observer.disconnect();
   }, [handleObserver]);
 
@@ -117,7 +121,7 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
       </div>
 
       {/* Listing cards — grid */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-[1240px] mx-auto px-6 pb-6">
           {loading && listings.length === 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
