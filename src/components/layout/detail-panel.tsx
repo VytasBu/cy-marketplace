@@ -25,7 +25,7 @@ export function DetailPanel({ listing, onClose }: DetailPanelProps) {
         <SheetContent
           side="right"
           showCloseButton={false}
-          overlayClassName="bg-black/10 backdrop-blur-none"
+          overlayClassName="bg-transparent backdrop-blur-none"
           className="sm:max-w-[50vw] w-[50vw] p-0 overflow-y-auto"
         >
           <SheetTitle className="sr-only">Listing details</SheetTitle>

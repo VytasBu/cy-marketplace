@@ -110,7 +110,8 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
+            className="gap-1.5"
             onClick={() => {
               if (!user) {
                 setShowLoginDialog(true);
@@ -128,6 +129,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
                   : ""
               )}
             />
+            Save
           </Button>
           <Button
             variant="ghost"
@@ -239,37 +241,37 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
         "space-y-4",
         isFullscreen ? "py-4" : "p-4"
       )}>
-        {/* Price */}
-        <p className="text-2xl font-bold">
-          {formatPrice(listing.price, listing.currency)}
-        </p>
-
-        {/* Meta badges */}
-        <div className="flex flex-wrap gap-2">
-          {listing.location && (
-            <Badge variant="outline" className="gap-1">
-              <MapPin className="h-3 w-3" />
-              {listing.location}
-            </Badge>
-          )}
-          {listing.category_path && listing.category_path.length > 0 ? (
-            <Badge variant="secondary">
-              {listing.category_path.map((c, i) => (
-                <span key={c.id}>
-                  {i > 0 && <span className="opacity-50 mx-0.5">›</span>}
-                  {c.name}
-                </span>
-              ))}
-            </Badge>
-          ) : listing.category ? (
-            <Badge variant="secondary">{listing.category.name}</Badge>
-          ) : null}
-          {listing.raw_date && (
-            <Badge variant="outline" className="gap-1">
-              <Clock className="h-3 w-3" />
-              {formatDate(listing.raw_date)}
-            </Badge>
-          )}
+        {/* Price + Meta badges row */}
+        <div className="flex items-baseline justify-between gap-4 flex-wrap">
+          <p className="text-2xl font-bold shrink-0">
+            {formatPrice(listing.price, listing.currency)}
+          </p>
+          <div className="flex flex-wrap gap-2 items-center">
+            {listing.location && (
+              <Badge variant="outline" className="gap-1">
+                <MapPin className="h-3 w-3" />
+                {listing.location}
+              </Badge>
+            )}
+            {listing.category_path && listing.category_path.length > 0 ? (
+              <Badge variant="secondary">
+                {listing.category_path.map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 && <span className="opacity-50 mx-0.5">›</span>}
+                    {c.name}
+                  </span>
+                ))}
+              </Badge>
+            ) : listing.category ? (
+              <Badge variant="secondary">{listing.category.name}</Badge>
+            ) : null}
+            {listing.raw_date && (
+              <Badge variant="outline" className="gap-1">
+                <Clock className="h-3 w-3" />
+                {formatDate(listing.raw_date)}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <Separator />
