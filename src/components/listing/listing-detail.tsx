@@ -3,18 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   X,
-  MapPin,
-  Clock,
   Send,
   ChevronLeft,
   ChevronRight,
   Globe,
   Image as ImageIcon,
-  Link2,
+  Share,
   Check,
   Heart,
   ArrowLeft,
@@ -47,7 +43,6 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -63,7 +58,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
 
   const isFullscreen = variant === "fullscreen";
 
-  const handleCopyLink = () => {
+  const handleShare = () => {
     const url = isFullscreen
       ? window.location.href
       : `${window.location.origin}/listing/${listing.id}`;
@@ -91,8 +86,8 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
     <div className={cn("flex flex-col", isFullscreen && "max-w-[800px] mx-auto w-full")}>
       {/* Header */}
       <div className={cn(
-        "flex items-center justify-between border-b sticky top-0 bg-background z-10",
-        isFullscreen ? "p-4 px-0" : "p-3"
+        "flex items-center justify-between sticky top-0 bg-background z-10",
+        isFullscreen ? "py-4" : "p-3"
       )}>
         <div className="flex items-center gap-2">
           {isFullscreen && (
@@ -105,13 +100,15 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          <h3 className="font-semibold truncate">Listing details</h3>
+          <h3 className={cn("font-semibold truncate", isFullscreen ? "text-xl" : "text-base")}>
+            Listing details
+          </h3>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="gap-1.5"
+            className="gap-1.5 rounded-xl"
             onClick={() => {
               if (!user) {
                 setShowLoginDialog(true);
@@ -119,11 +116,10 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
               }
               toggleSave(listing.id);
             }}
-            title={isSaved(listing.id) ? "Unsave" : "Save"}
           >
             <Heart
               className={cn(
-                "h-4 w-4 transition-colors",
+                "h-3.5 w-3.5 transition-colors",
                 isSaved(listing.id)
                   ? "fill-red-500 text-red-500"
                   : ""
@@ -134,25 +130,18 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleCopyLink}
-            title="Copy link"
+            onClick={handleShare}
+            title="Share"
           >
             {copied ? (
               <Check className="h-4 w-4 text-green-500" />
             ) : (
-              <Link2 className="h-4 w-4" />
+              <Share className="h-4 w-4" />
             )}
           </Button>
-          {!isFullscreen && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleExpand}
-              title="Open full screen"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          )}
+          <Button variant="ghost" size="icon" onClick={isFullscreen ? onClose : handleExpand} title={isFullscreen ? "Close" : "Open full screen"}>
+            {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
           {!isFullscreen && (
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -165,7 +154,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
       {listing.photos.length > 0 ? (
         <div className={cn(
           "relative bg-muted",
-          isFullscreen ? "aspect-[16/9] rounded-xl overflow-hidden mt-4" : "aspect-[4/3]"
+          isFullscreen ? "aspect-[16/9] rounded-xl overflow-hidden" : "aspect-[4/3]"
         )}>
           <img
             src={listing.photos[currentPhoto]}
@@ -203,7 +192,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
       ) : (
         <div className={cn(
           "bg-muted flex items-center justify-center text-muted-foreground",
-          isFullscreen ? "aspect-[16/9] rounded-xl mt-4" : "aspect-[4/3]"
+          isFullscreen ? "aspect-[16/9] rounded-xl" : "aspect-[4/3]"
         )}>
           <ImageIcon className="h-12 w-12" />
         </div>
@@ -238,48 +227,35 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
 
       {/* Content */}
       <div className={cn(
-        "space-y-4",
-        isFullscreen ? "py-4" : "p-4"
+        "space-y-6",
+        isFullscreen ? "py-6" : "p-4 pt-3"
       )}>
-        {/* Price + Meta badges row */}
+        {/* Price + Meta row */}
         <div className="flex items-baseline justify-between gap-4 flex-wrap">
           <p className="text-2xl font-bold shrink-0">
             {formatPrice(listing.price, listing.currency)}
           </p>
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-3 items-center text-sm text-muted-foreground">
             {listing.location && (
-              <Badge variant="outline" className="gap-1">
-                <MapPin className="h-3 w-3" />
-                {listing.location}
-              </Badge>
+              <span>{listing.location}</span>
             )}
             {listing.category_path && listing.category_path.length > 0 ? (
-              <Badge variant="secondary">
-                {listing.category_path.map((c, i) => (
-                  <span key={c.id}>
-                    {i > 0 && <span className="opacity-50 mx-0.5">›</span>}
-                    {c.name}
-                  </span>
-                ))}
-              </Badge>
+              listing.category_path.map((c, i) => (
+                <span key={c.id}>{c.name}</span>
+              ))
             ) : listing.category ? (
-              <Badge variant="secondary">{listing.category.name}</Badge>
+              <span>{listing.category.name}</span>
             ) : null}
             {listing.raw_date && (
-              <Badge variant="outline" className="gap-1">
-                <Clock className="h-3 w-3" />
-                {formatDate(listing.raw_date)}
-              </Badge>
+              <span>{formatDate(listing.raw_date)}</span>
             )}
           </div>
         </div>
 
-        <Separator />
-
         {/* Description with language toggle */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium">Description</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold">Description</h4>
             {listing.description_en && listing.description_original && (
               <Button
                 variant="ghost"
@@ -297,11 +273,9 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
           </p>
         </div>
 
-        <Separator />
-
         {/* Seller section */}
-        <div>
-          <h4 className="font-medium mb-3">Seller</h4>
+        <div className="border-t pt-6">
+          <h4 className="font-semibold mb-3">Seller</h4>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
               {(listing.telegram_sender_name || "?")[0].toUpperCase()}
