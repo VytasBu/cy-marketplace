@@ -4,8 +4,6 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useListings } from "@/lib/hooks/use-listings";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { ListingCard } from "@/components/listing/listing-card";
-import { SearchInput } from "@/components/filters/search-input";
-import { SaveSearchButton } from "@/components/filters/save-search-button";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -63,6 +61,7 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
       threshold: 0.1,
+      rootMargin: "0px 0px 400px 0px",
     });
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
@@ -70,18 +69,14 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search bar */}
-      <div className="sticky top-0 z-10 bg-background border-b p-3 flex gap-2">
-        <SearchInput />
-        <SaveSearchButton />
-      </div>
-
       {/* Filter bar */}
-      <FilterBar />
+      <div className="max-w-[1240px] mx-auto w-full">
+        <FilterBar />
+      </div>
 
       {/* Context header — search query or category breadcrumb */}
       {(filters.search || filters.category) && (
-        <div className="px-3 pt-3 pb-1 flex items-center gap-2">
+        <div className="max-w-[1240px] mx-auto w-full px-6 pt-4 pb-1 flex items-center gap-3">
           <Button
             variant="outline"
             size="icon"
@@ -94,11 +89,11 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
           </Button>
           <div className="min-w-0">
             {filters.search ? (
-              <p className="font-semibold text-base leading-tight">
-                Search results for &ldquo;{filters.search}&rdquo;
+              <p className="font-semibold text-xl leading-tight">
+                Results for &ldquo;{filters.search}&rdquo;
               </p>
             ) : filters.category && categoryBreadcrumb ? (
-              <p className="font-semibold text-base leading-tight">
+              <p className="font-semibold text-xl leading-tight">
                 {categoryBreadcrumb[categoryBreadcrumb.length - 1].icon && (
                   <span className="mr-1">{categoryBreadcrumb[categoryBreadcrumb.length - 1].icon}</span>
                 )}
@@ -117,52 +112,52 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
       )}
 
       {/* Results count */}
-      <div className="px-3 py-2 text-sm text-muted-foreground">
+      <div className="max-w-[1240px] mx-auto w-full px-6 py-2 text-sm text-muted-foreground">
         {loading ? "Loading..." : `${total} listings found`}
       </div>
 
       {/* Listing cards — grid */}
-      <div className="flex-1 overflow-y-auto px-3 pb-3">
-        {loading && listings.length === 0 ? (
-          // Loading skeletons
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="rounded-lg border overflow-hidden">
-                <Skeleton className="aspect-square w-full" />
-                <div className="p-2.5 space-y-2">
-                  <Skeleton className="h-4 w-1/2" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-2/3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : listings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <p className="text-lg font-medium">No listings found</p>
-            <p className="text-sm">Try adjusting your filters</p>
-          </div>
-        ) : (
-          <>
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[1240px] mx-auto px-6 pb-6">
+          {loading && listings.length === 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {listings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  isSelected={selectedId === listing.id}
-                  onClick={() => onSelectListing(listing)}
-                />
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="rounded-lg border overflow-hidden">
+                  <Skeleton className="aspect-square w-full" />
+                  <div className="p-2.5 space-y-2">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
               ))}
             </div>
-            {/* Infinite scroll trigger */}
-            <div ref={observerRef} className="h-4" />
-            {loading && listings.length > 0 && (
-              <div className="flex justify-center py-4">
-                <Skeleton className="h-8 w-32" />
+          ) : listings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <p className="text-lg font-medium">No listings found</p>
+              <p className="text-sm">Try adjusting your filters</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {listings.map((listing) => (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    isSelected={selectedId === listing.id}
+                    onClick={() => onSelectListing(listing)}
+                  />
+                ))}
               </div>
-            )}
-          </>
-        )}
+              <div ref={observerRef} className="h-4" />
+              {loading && listings.length > 0 && (
+                <div className="flex justify-center py-4">
+                  <Skeleton className="h-8 w-32" />
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

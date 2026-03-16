@@ -12,6 +12,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
 
 // --- localStorage helpers ---
@@ -88,7 +89,12 @@ function buildCategorySuggestions(
   return matches;
 }
 
-export function SearchInput() {
+interface SearchInputProps {
+  placeholder?: string;
+  variant?: "default" | "homepage";
+}
+
+export function SearchInput({ placeholder = "Search listings...", variant = "default" }: SearchInputProps) {
   const { filters, setFilter, setFilters } = useFilters();
   const [inputValue, setInputValue] = useState(filters.search || "");
   const [open, setOpen] = useState(false);
@@ -166,14 +172,19 @@ export function SearchInput() {
   const showRecent = !inputValue.trim() && recentSearches.length > 0;
   const showSuggestions = inputValue.trim().length > 0;
 
+  const isHomepage = variant === "homepage";
+
   return (
     <div ref={containerRef} className="relative flex-1">
       <Command shouldFilter={false} className="bg-transparent overflow-visible">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Search className={cn(
+            "absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none",
+            isHomepage ? "h-5 w-5 left-4" : "h-4 w-4"
+          )} />
           <CommandPrimitive.Input asChild>
             <Input
-              placeholder="Search listings..."
+              placeholder={placeholder}
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value);
@@ -189,9 +200,26 @@ export function SearchInput() {
                   setOpen(false);
                 }
               }}
-              className="pl-9"
+              className={cn(
+                "bg-background rounded-2xl h-11",
+                isHomepage
+                  ? "pl-12 pr-3 text-base"
+                  : "pl-9 pr-8"
+              )}
             />
           </CommandPrimitive.Input>
+          {!isHomepage && inputValue && (
+            <button
+              type="button"
+              onClick={() => {
+                setInputValue("");
+                executeSearch("");
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {open && (showRecent || showSuggestions) && (

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Feed } from "./feed";
-import { DetailPanel } from "./detail-panel";
 import type { Listing } from "@/types";
 
 export function MarketplaceLayout() {
@@ -45,29 +44,14 @@ export function MarketplaceLayout() {
     [searchParams, router, pathname]
   );
 
-  const handleCloseListing = useCallback(() => {
-    setSelectedListing(null);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("listing");
-    const qs = params.toString();
-    router.push(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
-  }, [searchParams, router, pathname]);
-
   return (
-    <div className="flex h-[calc(100vh-56px)] overflow-hidden">
-      {/* Feed - main column */}
-      <main className="flex-1 min-w-0 overflow-y-auto">
+    <main className="flex-1 min-w-0 overflow-hidden">
+      <div className="h-full bg-background rounded-3xl overflow-hidden">
         <Feed
           onSelectListing={handleSelectListing}
           selectedId={selectedListing?.id || null}
         />
-      </main>
-
-      {/* Detail panel - desktop: side panel, mobile: bottom sheet */}
-      <DetailPanel
-        listing={selectedListing}
-        onClose={handleCloseListing}
-      />
-    </div>
+      </div>
+    </main>
   );
 }

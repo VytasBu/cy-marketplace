@@ -20,7 +20,7 @@ export function FilterBar() {
   );
 
   return (
-    <div className="space-y-2 px-3 py-2 border-b">
+    <div className="space-y-2 px-6 pt-6 pb-3">
       {/* Filter trigger buttons */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
         <CategoryFilterPopover />
