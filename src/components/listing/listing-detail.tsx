@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -16,6 +17,8 @@ import {
   Link2,
   Check,
   Heart,
+  ArrowLeft,
+  Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Listing } from "@/types";
@@ -25,6 +28,7 @@ import { useSavedListings } from "@/lib/hooks/use-saved-listings";
 interface ListingDetailProps {
   listing: Listing;
   onClose: () => void;
+  variant?: "panel" | "fullscreen";
 }
 
 function formatPrice(price: number | null, currency: string): string {
@@ -49,18 +53,28 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export function ListingDetail({ listing, onClose }: ListingDetailProps) {
+export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDetailProps) {
+  const router = useRouter();
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [showRussian, setShowRussian] = useState(false);
   const [copied, setCopied] = useState(false);
   const { user, setShowLoginDialog } = useAuth();
   const { isSaved, toggleSave } = useSavedListings();
 
+  const isFullscreen = variant === "fullscreen";
+
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const url = isFullscreen
+      ? window.location.href
+      : `${window.location.origin}/listing/${listing.id}`;
+    navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+  };
+
+  const handleExpand = () => {
+    router.push(`/listing/${listing.id}`);
   };
 
   const description = showRussian
@@ -74,10 +88,25 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
   const hasMultiplePhotos = listing.photos.length > 1;
 
   return (
-    <div className="flex flex-col">
+    <div className={cn("flex flex-col", isFullscreen && "max-w-[800px] mx-auto w-full")}>
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b sticky top-0 bg-background z-10">
-        <h3 className="font-semibold truncate">Listing Details</h3>
+      <div className={cn(
+        "flex items-center justify-between border-b sticky top-0 bg-background z-10",
+        isFullscreen ? "p-4 px-0" : "p-3"
+      )}>
+        <div className="flex items-center gap-2">
+          {isFullscreen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              title="Go back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <h3 className="font-semibold truncate">Listing details</h3>
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -112,15 +141,30 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
               <Link2 className="h-4 w-4" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+          {!isFullscreen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleExpand}
+              title="Open full screen"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
+          {!isFullscreen && (
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Main photo */}
       {listing.photos.length > 0 ? (
-        <div className="relative aspect-[4/3] bg-muted">
+        <div className={cn(
+          "relative bg-muted",
+          isFullscreen ? "aspect-[16/9] rounded-xl overflow-hidden mt-4" : "aspect-[4/3]"
+        )}>
           <img
             src={listing.photos[currentPhoto]}
             alt=""
@@ -155,14 +199,20 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
           )}
         </div>
       ) : (
-        <div className="aspect-[4/3] bg-muted flex items-center justify-center text-muted-foreground">
+        <div className={cn(
+          "bg-muted flex items-center justify-center text-muted-foreground",
+          isFullscreen ? "aspect-[16/9] rounded-xl mt-4" : "aspect-[4/3]"
+        )}>
           <ImageIcon className="h-12 w-12" />
         </div>
       )}
 
       {/* Thumbnail strip */}
       {hasMultiplePhotos && (
-        <div className="flex gap-1.5 px-3 py-2 overflow-x-auto">
+        <div className={cn(
+          "flex gap-1.5 py-2 overflow-x-auto",
+          isFullscreen ? "px-0" : "px-3"
+        )}>
           {listing.photos.map((url, i) => (
             <button
               key={i}
@@ -185,7 +235,10 @@ export function ListingDetail({ listing, onClose }: ListingDetailProps) {
       )}
 
       {/* Content */}
-      <div className="p-4 space-y-4">
+      <div className={cn(
+        "space-y-4",
+        isFullscreen ? "py-4" : "p-4"
+      )}>
         {/* Price */}
         <p className="text-2xl font-bold">
           {formatPrice(listing.price, listing.currency)}

@@ -55,13 +55,11 @@ function HomeContent() {
             />
           </main>
         )}
-        {selectedListing && (
-          <DetailPanel
-            listing={selectedListing}
-            onClose={handleCloseListing}
-          />
-        )}
       </div>
+      <DetailPanel
+        listing={selectedListing}
+        onClose={handleCloseListing}
+      />
     </div>
   );
 }
