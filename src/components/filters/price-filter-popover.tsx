@@ -83,7 +83,23 @@ export function PriceFilterPopover() {
       </PopoverTrigger>
       <PopoverContent className="w-[240px]">
         <div className="space-y-2">
-          <p className="text-sm font-medium">Price range</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Price range</p>
+            {isActive && (
+              <button
+                onClick={() => {
+                  setMin("");
+                  setMax("");
+                  isUserInput.current = true;
+                  setFilters({ priceMin: undefined, priceMax: undefined });
+                  isUserInput.current = false;
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
           <div className="flex gap-2 items-center">
             <Input
               type="number"

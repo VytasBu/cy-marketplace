@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 import {
   X,
   Send,
@@ -67,6 +68,28 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
   const [copied, setCopied] = useState(false);
   const { user, setShowLoginDialog } = useAuth();
   const { isSaved, toggleSave } = useSavedListings();
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+
+  // Sync carousel selected index → currentPhoto state
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setCurrentPhoto(carouselApi.selectedScrollSnap());
+    carouselApi.on("select", onSelect);
+    return () => { carouselApi.off("select", onSelect); };
+  }, [carouselApi]);
+
+  const langRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!langOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [langOpen]);
 
   const isFullscreen = variant === "fullscreen";
   const contentPx = isFullscreen ? "px-0" : "px-5";
@@ -169,43 +192,47 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
         </div>
       </div>
 
-      {/* Main photo */}
+      {/* Main photo — swipeable carousel */}
       <div className={contentPx}>
         {listing.photos.length > 0 ? (
-          <div className="relative bg-muted aspect-[16/10] rounded-2xl overflow-hidden">
-            <img
-              src={listing.photos[currentPhoto]}
-              alt=""
-              className="w-full h-full object-contain"
-            />
+          <Carousel
+            opts={{ loop: true }}
+            setApi={setCarouselApi}
+            className="relative"
+          >
+            <CarouselContent className="ml-0">
+              {listing.photos.map((url, i) => (
+                <CarouselItem key={i} className="pl-0">
+                  <div className="bg-muted aspect-[16/10] rounded-2xl overflow-hidden">
+                    <img
+                      src={url}
+                      alt=""
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
             {hasMultiplePhotos && (
               <>
                 <button
-                  onClick={() =>
-                    setCurrentPhoto((p) =>
-                      p > 0 ? p - 1 : listing.photos.length - 1
-                    )
-                  }
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+                  onClick={() => carouselApi?.scrollPrev()}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors z-10"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() =>
-                    setCurrentPhoto((p) =>
-                      p < listing.photos.length - 1 ? p + 1 : 0
-                    )
-                  }
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+                  onClick={() => carouselApi?.scrollNext()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors z-10"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
                   {currentPhoto + 1} / {listing.photos.length}
                 </div>
               </>
             )}
-          </div>
+          </Carousel>
         ) : (
           <div className="bg-muted flex items-center justify-center text-muted-foreground aspect-[16/10] rounded-2xl">
             <ImageIcon className="h-12 w-12" />
@@ -219,7 +246,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
           {listing.photos.map((url, i) => (
             <button
               key={i}
-              onClick={() => setCurrentPhoto(i)}
+              onClick={() => carouselApi?.scrollTo(i)}
               className={cn(
                 "w-14 h-14 rounded-md overflow-hidden shrink-0 border-2 transition-colors",
                 currentPhoto === i
@@ -269,32 +296,35 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold">Description</h4>
             {hasTranslation && (
-              <Popover open={langOpen} onOpenChange={setLangOpen}>
-                <PopoverTrigger
+              <div ref={langRef} className="relative">
+                <button
+                  onClick={() => setLangOpen((o) => !o)}
                   className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   {language === "en" ? "EN" : "RU"}
                   <ChevronDown className="h-3.5 w-3.5" />
-                </PopoverTrigger>
-                <PopoverContent className="w-[140px] p-1" align="end">
-                  {LANGUAGES.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      onClick={() => {
-                        setLanguage(value as "en" | "ru");
-                        setLangOpen(false);
-                      }}
-                      className={cn(
-                        "w-full text-left text-sm py-1.5 px-2 rounded-md hover:bg-accent flex items-center justify-between",
-                        language === value && "bg-primary/10 text-primary font-medium"
-                      )}
-                    >
-                      {label}
-                      {language === value && <Check className="h-3.5 w-3.5" />}
-                    </button>
-                  ))}
-                </PopoverContent>
-              </Popover>
+                </button>
+                {langOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-50 w-[140px] p-1 rounded-xl border bg-popover shadow-md">
+                    {LANGUAGES.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        onClick={() => {
+                          setLanguage(value as "en" | "ru");
+                          setLangOpen(false);
+                        }}
+                        className={cn(
+                          "w-full text-left text-sm py-1.5 px-2 rounded-md hover:bg-accent flex items-center justify-between",
+                          language === value && "bg-primary/10 text-primary font-medium"
+                        )}
+                      >
+                        {label}
+                        {language === value && <Check className="h-3.5 w-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
           <p className="text-sm whitespace-pre-wrap leading-relaxed">

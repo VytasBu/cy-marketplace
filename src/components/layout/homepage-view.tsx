@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { useScrollDirection } from "@/lib/hooks/use-scroll-direction";
 import { ListingCard } from "@/components/listing/listing-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LayoutGrid } from "lucide-react";
@@ -10,23 +11,29 @@ import type { Category, Listing, ListingsResponse } from "@/types";
 interface HomepageViewProps {
   onSelectListing: (listing: Listing) => void;
   selectedId: string | null;
+  onScrollDirection?: (dir: "up" | "down") => void;
 }
 
 export function HomepageView({
   onSelectListing,
   selectedId,
+  onScrollDirection,
 }: HomepageViewProps) {
   const { setFilter } = useFilters();
   const [categories, setCategories] = useState<Category[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingListings, setLoadingListings] = useState(true);
-  const [showAllCategories, setShowAllCategories] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const pageRef = useRef(1);
   const loadingMoreRef = useRef(false);
   const observerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollDirection = useScrollDirection(scrollRef);
+  useEffect(() => {
+    onScrollDirection?.(scrollDirection);
+  }, [scrollDirection, onScrollDirection]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -80,10 +87,6 @@ export function HomepageView({
   }, [hasMore, loadingListings, loadMore]);
 
   const roots = categories.filter((c) => c.parent_id === null);
-  const ROW_SIZE = 8;
-  const visibleCategories = showAllCategories
-    ? roots
-    : roots.slice(0, ROW_SIZE * 2 - 1);
 
   const handleCategoryClick = useCallback(
     (slug: string) => {
@@ -111,38 +114,49 @@ export function HomepageView({
               ))}
             </div>
           ) : (
-            <div className="flex flex-wrap justify-center gap-5">
-              {visibleCategories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.slug)}
-                  className="flex flex-col items-center gap-2 group cursor-pointer w-[120px]"
-                >
-                  <div className="w-[100px] h-[100px] rounded-2xl border bg-card flex items-center justify-center text-3xl transition-colors group-hover:bg-accent">
-                    {cat.icon || (
-                      <LayoutGrid className="h-8 w-8 text-muted-foreground" />
-                    )}
-                  </div>
-                  <span className="text-xs font-medium text-foreground text-center leading-tight">
-                    {cat.name}
-                  </span>
-                </button>
-              ))}
+            <>
+              {/* Mobile: 2-row horizontal scroll */}
+              <div className="md:hidden -mx-6 px-6 overflow-x-auto scrollbar-none">
+                <div className="grid grid-rows-2 grid-flow-col gap-3 w-max">
+                  {roots.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategoryClick(cat.slug)}
+                      className="flex flex-col items-center gap-1.5 group cursor-pointer w-[80px]"
+                    >
+                      <div className="w-[72px] h-[72px] rounded-2xl border bg-card flex items-center justify-center text-2xl transition-colors group-hover:bg-accent">
+                        {cat.icon || (
+                          <LayoutGrid className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="text-[11px] font-medium text-foreground text-center leading-tight line-clamp-2">
+                        {cat.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              {!showAllCategories && roots.length > ROW_SIZE * 2 - 1 && (
-                <button
-                  onClick={() => setShowAllCategories(true)}
-                  className="flex flex-col items-center gap-2 group cursor-pointer w-[120px]"
-                >
-                  <div className="w-[100px] h-[100px] rounded-2xl border bg-card flex items-center justify-center transition-colors group-hover:bg-accent">
-                    <LayoutGrid className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <span className="text-xs font-medium text-foreground text-center leading-tight">
-                    Expand all
-                  </span>
-                </button>
-              )}
-            </div>
+              {/* Desktop: flex-wrap centered */}
+              <div className="hidden md:flex flex-wrap justify-center gap-5">
+                {roots.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.slug)}
+                    className="flex flex-col items-center gap-2 group cursor-pointer w-[120px]"
+                  >
+                    <div className="w-[100px] h-[100px] rounded-2xl border bg-card flex items-center justify-center text-3xl transition-colors group-hover:bg-accent">
+                      {cat.icon || (
+                        <LayoutGrid className="h-8 w-8 text-muted-foreground" />
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-foreground text-center leading-tight">
+                      {cat.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </section>
 

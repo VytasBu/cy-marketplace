@@ -1,15 +1,17 @@
 "use client";
 
 import { useFilters } from "@/lib/hooks/use-filters";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { CategoryFilterPopover } from "./category-filter-popover";
 import { PriceFilterPopover } from "./price-filter-popover";
 import { LocationFilterPopover } from "./location-filter-popover";
 import { DateFilterPopover } from "./date-filter-popover";
 import { SortSelect } from "./sort-select";
-import { ActiveFilterChips } from "./active-filter-chips";
+import { MobileFiltersSheet } from "./mobile-filters-sheet";
 
 export function FilterBar() {
   const { filters, clearFilters } = useFilters();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const hasActiveFilters = !!(
     filters.category ||
@@ -23,25 +25,39 @@ export function FilterBar() {
     <div className="space-y-2 px-6 pt-6 pb-3">
       {/* Filter trigger buttons */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-        <CategoryFilterPopover />
-        <PriceFilterPopover />
-        <LocationFilterPopover />
-        <DateFilterPopover />
-        <div className="ml-auto flex items-center gap-2 shrink-0">
-          <SortSelect />
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer"
-            >
-              Clear filters
-            </button>
-          )}
-        </div>
+        {isDesktop ? (
+          <>
+            <CategoryFilterPopover />
+            <PriceFilterPopover />
+            <LocationFilterPopover />
+            <DateFilterPopover />
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <SortSelect />
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <MobileFiltersSheet />
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer ml-auto"
+              >
+                Clear filters
+              </button>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Active filter chips */}
-      <ActiveFilterChips />
     </div>
   );
 }

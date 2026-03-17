@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useImperativeHandle, forwardRef } from "react";
 import { Command as CommandPrimitive } from "cmdk";
 import { Search, X, Clock, FolderOpen } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
@@ -89,12 +89,16 @@ function buildCategorySuggestions(
   return matches;
 }
 
+export interface SearchInputHandle {
+  submit: () => void;
+}
+
 interface SearchInputProps {
   placeholder?: string;
   variant?: "default" | "homepage";
 }
 
-export function SearchInput({ placeholder = "Search listings...", variant = "default" }: SearchInputProps) {
+export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(function SearchInput({ placeholder = "Search listings...", variant = "default" }, ref) {
   const { filters, setFilter, setFilters } = useFilters();
   const [inputValue, setInputValue] = useState(filters.search || "");
   const [open, setOpen] = useState(false);
@@ -147,6 +151,10 @@ export function SearchInput({ placeholder = "Search listings...", variant = "def
     },
     [setFilters]
   );
+
+  useImperativeHandle(ref, () => ({
+    submit: () => executeSearch(inputValue),
+  }), [executeSearch, inputValue]);
 
   const selectCategory = useCallback(
     (slug: string) => {
@@ -203,23 +211,18 @@ export function SearchInput({ placeholder = "Search listings...", variant = "def
               className={cn(
                 "bg-background rounded-2xl h-11",
                 isHomepage
-                  ? "pl-12 pr-3 text-base"
-                  : "pl-9 pr-8"
+                  ? "pl-12 pr-12 text-base"
+                  : "pl-9 pr-12"
               )}
             />
           </CommandPrimitive.Input>
-          {!isHomepage && inputValue && (
-            <button
-              type="button"
-              onClick={() => {
-                setInputValue("");
-                executeSearch("");
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => executeSearch(inputValue)}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 rounded-[10px] bg-foreground text-background flex items-center justify-center hover:opacity-90 cursor-pointer"
+          >
+            <Search className="h-4 w-4" />
+          </button>
         </div>
 
         {open && (showRecent || showSuggestions) && (
@@ -294,4 +297,4 @@ export function SearchInput({ placeholder = "Search listings...", variant = "def
       </Command>
     </div>
   );
-}
+});

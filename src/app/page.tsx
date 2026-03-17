@@ -15,6 +15,7 @@ function HomeContent() {
   const router = useRouter();
   const pathname = usePathname();
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [headerHidden, setHeaderHidden] = useState(false);
 
   const hasActiveSearch = !!(
     searchParams.get("search") ||
@@ -39,9 +40,13 @@ function HomeContent() {
     router.push(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
   }, [searchParams, router, pathname]);
 
+  const handleScrollDirection = useCallback((dir: "up" | "down") => {
+    setHeaderHidden(dir === "down");
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-canvas p-2 rounded-4xl">
-      <Header variant={hasActiveSearch ? "search" : "homepage"} />
+      <Header variant={hasActiveSearch ? "search" : "homepage"} hidden={headerHidden && !hasActiveSearch} />
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {hasActiveSearch ? (
           <Suspense>
@@ -52,6 +57,7 @@ function HomeContent() {
             <HomepageView
               onSelectListing={handleSelectListing}
               selectedId={selectedListing?.id || null}
+              onScrollDirection={handleScrollDirection}
             />
           </main>
         )}

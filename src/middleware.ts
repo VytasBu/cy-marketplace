@@ -44,6 +44,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - API routes that use service role (scrape, cleanup, etc.)
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/scrape|api/cleanup|api/recategorize|api/translate-backfill|api/health).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|icons/|apple-touch-icon\\.png|api/scrape|api/cleanup|api/recategorize|api/translate-backfill|api/health).*)",
   ],
 };
