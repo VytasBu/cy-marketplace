@@ -114,7 +114,7 @@ export function Header({ variant = "homepage" }: HeaderProps) {
             {/* Search button */}
             <Button
               onClick={handleSearch}
-              className="gap-2 h-11 rounded-2xl px-5"
+              size="xl"
             >
               <Search className="h-4 w-4" />
               Search

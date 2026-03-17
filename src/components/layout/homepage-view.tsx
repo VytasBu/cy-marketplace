@@ -94,7 +94,7 @@ export function HomepageView({
 
   return (
     <div ref={scrollRef} className="h-full bg-background rounded-3xl py-9 overflow-y-auto overflow-x-hidden">
-      <div className="max-w-[1240px] mx-auto px-6 space-y-12">
+      <div className="mx-auto px-6 xl:px-[15%] space-y-12">
         {/* Browse categories */}
         <section className="space-y-6">
           <h2 className="text-center text-3xl font-medium text-foreground">

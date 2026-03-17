@@ -17,6 +17,7 @@ import {
   Maximize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import type { Listing } from "@/types";
 import { useAuth } from "@/lib/context/auth-context";
 import { useSavedListings } from "@/lib/hooks/use-saved-listings";
@@ -57,6 +58,11 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
   const { isSaved, toggleSave } = useSavedListings();
 
   const isFullscreen = variant === "fullscreen";
+  const contentPx = isFullscreen ? "px-0" : "px-5";
+
+  const handleExpand = () => {
+    router.push(`/listing/${listing.id}`);
+  };
 
   const handleShare = () => {
     const url = isFullscreen
@@ -66,10 +72,6 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
-
-  const handleExpand = () => {
-    router.push(`/listing/${listing.id}`);
   };
 
   const description = showRussian
@@ -87,7 +89,8 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
       {/* Header */}
       <div className={cn(
         "flex items-center justify-between sticky top-0 bg-background z-10",
-        isFullscreen ? "py-4" : "p-3"
+        isFullscreen ? "py-4" : "p-4 pb-3",
+        isFullscreen ? "" : "rounded-t-3xl"
       )}>
         <div className="flex items-center gap-2">
           {isFullscreen && (
@@ -128,7 +131,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
             Save
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={handleShare}
             title="Share"
@@ -139,71 +142,69 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
               <Share className="h-4 w-4" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" onClick={isFullscreen ? onClose : handleExpand} title={isFullscreen ? "Close" : "Open full screen"}>
-            {isFullscreen ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
           {!isFullscreen && (
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleExpand}
+              title="Open full screen"
+            >
+              <Maximize2 className="h-4 w-4" />
             </Button>
           )}
+          <Button variant="outline" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
       {/* Main photo */}
-      {listing.photos.length > 0 ? (
-        <div className={cn(
-          "relative bg-muted",
-          isFullscreen ? "aspect-[16/9] rounded-xl overflow-hidden" : "aspect-[4/3]"
-        )}>
-          <img
-            src={listing.photos[currentPhoto]}
-            alt=""
-            className="w-full h-full object-contain"
-          />
-          {hasMultiplePhotos && (
-            <>
-              <button
-                onClick={() =>
-                  setCurrentPhoto((p) =>
-                    p > 0 ? p - 1 : listing.photos.length - 1
-                  )
-                }
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentPhoto((p) =>
-                    p < listing.photos.length - 1 ? p + 1 : 0
-                  )
-                }
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                {currentPhoto + 1} / {listing.photos.length}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className={cn(
-          "bg-muted flex items-center justify-center text-muted-foreground",
-          isFullscreen ? "aspect-[16/9] rounded-xl" : "aspect-[4/3]"
-        )}>
-          <ImageIcon className="h-12 w-12" />
-        </div>
-      )}
+      <div className={contentPx}>
+        {listing.photos.length > 0 ? (
+          <div className="relative bg-muted aspect-[16/10] rounded-2xl overflow-hidden">
+            <img
+              src={listing.photos[currentPhoto]}
+              alt=""
+              className="w-full h-full object-contain"
+            />
+            {hasMultiplePhotos && (
+              <>
+                <button
+                  onClick={() =>
+                    setCurrentPhoto((p) =>
+                      p > 0 ? p - 1 : listing.photos.length - 1
+                    )
+                  }
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPhoto((p) =>
+                      p < listing.photos.length - 1 ? p + 1 : 0
+                    )
+                  }
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                  {currentPhoto + 1} / {listing.photos.length}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="bg-muted flex items-center justify-center text-muted-foreground aspect-[16/10] rounded-2xl">
+            <ImageIcon className="h-12 w-12" />
+          </div>
+        )}
+      </div>
 
       {/* Thumbnail strip */}
       {hasMultiplePhotos && (
-        <div className={cn(
-          "flex gap-1.5 py-2 overflow-x-auto",
-          isFullscreen ? "px-0" : "px-3"
-        )}>
+        <div className={cn("flex gap-1.5 py-2 overflow-x-auto", contentPx)}>
           {listing.photos.map((url, i) => (
             <button
               key={i}
@@ -226,31 +227,31 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
       )}
 
       {/* Content */}
-      <div className={cn(
-        "space-y-6",
-        isFullscreen ? "py-6" : "p-4 pt-3"
-      )}>
+      <div className={cn("space-y-5 pt-4 pb-6", contentPx)}>
         {/* Price + Meta row */}
         <div className="flex items-baseline justify-between gap-4 flex-wrap">
           <p className="text-2xl font-bold shrink-0">
             {formatPrice(listing.price, listing.currency)}
           </p>
-          <div className="flex flex-wrap gap-3 items-center text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-2 items-center">
             {listing.location && (
-              <span>{listing.location}</span>
+              <Badge variant="outline">{listing.location}</Badge>
             )}
             {listing.category_path && listing.category_path.length > 0 ? (
-              listing.category_path.map((c, i) => (
-                <span key={c.id}>{c.name}</span>
+              listing.category_path.map((c) => (
+                <Badge key={c.id} variant="outline">{c.name}</Badge>
               ))
             ) : listing.category ? (
-              <span>{listing.category.name}</span>
+              <Badge variant="outline">{listing.category.name}</Badge>
             ) : null}
             {listing.raw_date && (
-              <span>{formatDate(listing.raw_date)}</span>
+              <Badge variant="outline">{formatDate(listing.raw_date)}</Badge>
             )}
           </div>
         </div>
+
+        {/* Separator */}
+        <div className="border-t border-border" />
 
         {/* Description with language toggle */}
         <div>
@@ -273,8 +274,11 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
           </p>
         </div>
 
+        {/* Separator */}
+        <div className="border-t border-border" />
+
         {/* Seller section */}
-        <div className="border-t pt-6">
+        <div>
           <h4 className="font-semibold mb-3">Seller</h4>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
