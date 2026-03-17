@@ -27,15 +27,17 @@ export function FilterBar() {
         <PriceFilterPopover />
         <LocationFilterPopover />
         <DateFilterPopover />
-        <SortSelect />
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap ml-auto cursor-pointer"
-          >
-            Clear filters
-          </button>
-        )}
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <SortSelect />
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Active filter chips */}

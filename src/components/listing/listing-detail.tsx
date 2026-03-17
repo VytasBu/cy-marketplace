@@ -4,11 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
   X,
   Send,
   ChevronLeft,
   ChevronRight,
-  Globe,
+  ChevronDown,
   Image as ImageIcon,
   Share,
   Check,
@@ -49,10 +54,16 @@ function formatDate(dateStr: string): string {
   });
 }
 
+const LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "ru", label: "Russian" },
+];
+
 export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDetailProps) {
   const router = useRouter();
   const [currentPhoto, setCurrentPhoto] = useState(0);
-  const [showRussian, setShowRussian] = useState(false);
+  const [language, setLanguage] = useState<"en" | "ru">("en");
+  const [langOpen, setLangOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const { user, setShowLoginDialog } = useAuth();
   const { isSaved, toggleSave } = useSavedListings();
@@ -74,7 +85,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
     });
   };
 
-  const description = showRussian
+  const description = language === "ru"
     ? listing.description_original
     : listing.description_en || listing.description_original;
 
@@ -83,6 +94,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
     : null;
 
   const hasMultiplePhotos = listing.photos.length > 1;
+  const hasTranslation = !!(listing.description_en && listing.description_original);
 
   return (
     <div className={cn("flex flex-col", isFullscreen && "max-w-[800px] mx-auto w-full")}>
@@ -107,11 +119,10 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
             Listing details
           </h3>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            size="sm"
-            className="gap-1.5 rounded-xl"
+            className="gap-1.5"
             onClick={() => {
               if (!user) {
                 setShowLoginDialog(true);
@@ -122,7 +133,7 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
           >
             <Heart
               className={cn(
-                "h-3.5 w-3.5 transition-colors",
+                "h-4 w-4 transition-colors",
                 isSaved(listing.id)
                   ? "fill-red-500 text-red-500"
                   : ""
@@ -253,20 +264,37 @@ export function ListingDetail({ listing, onClose, variant = "panel" }: ListingDe
         {/* Separator */}
         <div className="border-t border-border" />
 
-        {/* Description with language toggle */}
+        {/* Description with language selector */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold">Description</h4>
-            {listing.description_en && listing.description_original && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 text-xs h-7"
-                onClick={() => setShowRussian(!showRussian)}
-              >
-                <Globe className="h-3 w-3" />
-                {showRussian ? "EN" : "RU"}
-              </Button>
+            {hasTranslation && (
+              <Popover open={langOpen} onOpenChange={setLangOpen}>
+                <PopoverTrigger
+                  className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  {language === "en" ? "EN" : "RU"}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </PopoverTrigger>
+                <PopoverContent className="w-[140px] p-1" align="end">
+                  {LANGUAGES.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setLanguage(value as "en" | "ru");
+                        setLangOpen(false);
+                      }}
+                      className={cn(
+                        "w-full text-left text-sm py-1.5 px-2 rounded-md hover:bg-accent flex items-center justify-between",
+                        language === value && "bg-primary/10 text-primary font-medium"
+                      )}
+                    >
+                      {label}
+                      {language === value && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
             )}
           </div>
           <p className="text-sm whitespace-pre-wrap leading-relaxed">

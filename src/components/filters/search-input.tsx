@@ -223,7 +223,7 @@ export function SearchInput({ placeholder = "Search listings...", variant = "def
         </div>
 
         {open && (showRecent || showSuggestions) && (
-          <CommandList className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border bg-popover shadow-md max-h-64 overflow-y-auto">
+          <CommandList className="absolute top-full left-0 right-0 z-50 mt-1 rounded-2xl border bg-popover shadow-md max-h-64 overflow-y-auto">
             {showRecent && (
               <CommandGroup heading="Recent searches">
                 {recentSearches.map((term) => (
