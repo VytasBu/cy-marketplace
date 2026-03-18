@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/header";
 import { HomepageView } from "@/components/layout/homepage-view";
 import { useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { DetailPanel } from "@/components/layout/detail-panel";
 import type { Listing } from "@/types";
 
@@ -16,6 +17,7 @@ function HomeContent() {
   const pathname = usePathname();
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [headerHidden, setHeaderHidden] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const hasActiveSearch = !!(
     searchParams.get("search") ||
@@ -41,8 +43,11 @@ function HomeContent() {
   }, [searchParams, router, pathname]);
 
   const handleScrollDirection = useCallback((dir: "up" | "down") => {
-    setHeaderHidden(dir === "down");
-  }, []);
+    // Only collapse search on scroll for desktop — on mobile keep it always visible
+    if (isDesktop) {
+      setHeaderHidden(dir === "down");
+    }
+  }, [isDesktop]);
 
   return (
     <div className="h-screen flex flex-col bg-canvas p-2 rounded-4xl">
