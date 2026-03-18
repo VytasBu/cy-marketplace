@@ -8,6 +8,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     <SerwistProvider
       swUrl="/serwist/sw.js"
       disable={process.env.NODE_ENV === "development"}
+      options={{ scope: "/" }}
     >
       {children}
     </SerwistProvider>

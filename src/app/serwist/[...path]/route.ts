@@ -23,7 +23,21 @@ export const GET = async (
   const { path: pathSegments } = await context.params;
   // Rejoin the segments since Serwist internally expects a single string path
   const joinedPath = pathSegments.join("/");
-  return serwistRoute.GET(request, {
+  const response = await serwistRoute.GET(request, {
     params: Promise.resolve({ path: joinedPath }),
   });
+
+  // The SW is served from /serwist/sw.js but needs to control the root scope (/).
+  // Without this header, browsers restrict the SW scope to /serwist/.
+  if (joinedPath === "sw.js") {
+    const headers = new Headers(response.headers);
+    headers.set("Service-Worker-Allowed", "/");
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+
+  return response;
 };
