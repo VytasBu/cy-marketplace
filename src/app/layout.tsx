@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/context/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PwaProvider } from "@/components/pwa-provider";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -15,6 +16,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  themeColor: "#5686CC",
 };
 
 export const metadata: Metadata = {
@@ -22,7 +24,6 @@ export const metadata: Metadata = {
   description:
     "Browse marketplace listings from Cyprus Telegram channels. Find electronics, furniture, vehicles, real estate and more.",
   manifest: "/manifest.json",
-  themeColor: "#5686CC",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -47,11 +48,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          <AuthProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <PwaProvider>
+          <ThemeProvider attribute="class" defaultTheme="light">
+            <AuthProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </PwaProvider>
       </body>
     </html>
   );

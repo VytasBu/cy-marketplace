@@ -9,9 +9,8 @@ import { join } from "path";
 const PUBLIC = join(__dirname, "..", "public");
 const ICONS = join(PUBLIC, "icons");
 
-// Brand colors from the app's design system
+// Brand color from the app's design system
 const THEME_COLOR = "#5686CC";
-const BG_COLOR = "#F5F5F5";
 
 // SVG source icon — "CY" text on branded background
 const createSvg = (size: number, maskable: boolean) => {
