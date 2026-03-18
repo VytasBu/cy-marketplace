@@ -1,3 +1,5 @@
+"use client";
+
 export default function OfflinePage() {
   return (
     <div className="flex items-center justify-center h-screen bg-[var(--canvas)]">
