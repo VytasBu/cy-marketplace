@@ -7,7 +7,6 @@ import { PriceFilterPopover } from "./price-filter-popover";
 import { LocationFilterPopover } from "./location-filter-popover";
 import { DateFilterPopover } from "./date-filter-popover";
 import { SortSelect } from "./sort-select";
-import { MobileFiltersSheet } from "./mobile-filters-sheet";
 
 export function FilterBar() {
   const { filters, clearFilters } = useFilters();
@@ -21,43 +20,27 @@ export function FilterBar() {
     (filters.datePosted && filters.datePosted !== "all")
   );
 
+  if (!isDesktop) return null;
+
   return (
     <div className="space-y-2 px-6 pt-6 pb-3">
-      {/* Filter trigger buttons */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-        {isDesktop ? (
-          <>
-            <CategoryFilterPopover />
-            <PriceFilterPopover />
-            <LocationFilterPopover />
-            <DateFilterPopover />
-            <div className="ml-auto flex items-center gap-2 shrink-0">
-              <SortSelect />
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <MobileFiltersSheet />
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer ml-auto"
-              >
-                Clear filters
-              </button>
-            )}
-          </>
-        )}
+        <CategoryFilterPopover />
+        <PriceFilterPopover />
+        <LocationFilterPopover />
+        <DateFilterPopover />
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <SortSelect />
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-sm text-muted-foreground hover:text-foreground whitespace-nowrap cursor-pointer"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
-
     </div>
   );
 }

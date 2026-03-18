@@ -56,7 +56,7 @@ export function MarketplaceLayout() {
   return (
     <>
       <main className="flex-1 min-w-0 overflow-hidden">
-        <div className="h-full bg-background rounded-3xl overflow-hidden">
+        <div className="h-full bg-background rounded-2xl md:rounded-3xl overflow-hidden border border-border/50 md:border-0">
           <Feed
             onSelectListing={handleSelectListing}
             selectedId={selectedListing?.id || null}

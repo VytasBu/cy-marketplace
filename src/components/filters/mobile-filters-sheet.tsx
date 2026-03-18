@@ -123,14 +123,15 @@ export function MobileFiltersSheet() {
     setOpen(false);
   };
 
-  const hasActiveFilters = !!(
-    filters.category ||
-    filters.priceMin ||
-    filters.priceMax ||
-    filters.location ||
-    (filters.datePosted && filters.datePosted !== "all") ||
-    (filters.sort && filters.sort !== "newest")
-  );
+  const activeFilterCount = [
+    filters.category,
+    filters.priceMin,
+    filters.priceMax,
+    filters.location,
+    filters.datePosted && filters.datePosted !== "all" ? filters.datePosted : undefined,
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const selectedCategory = categories.find((c) => c.slug === filters.category);
 
@@ -194,7 +195,7 @@ export function MobileFiltersSheet() {
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors hover:bg-accent cursor-pointer",
+          "inline-flex items-center justify-center gap-1 rounded-lg border px-3 py-1 h-8 text-sm font-medium whitespace-nowrap transition-colors hover:bg-accent cursor-pointer flex-1",
           hasActiveFilters
             ? "border-primary text-primary"
             : "border-border text-foreground"
@@ -203,8 +204,8 @@ export function MobileFiltersSheet() {
         <SlidersHorizontal className="h-3.5 w-3.5 opacity-60" />
         Filters
         {hasActiveFilters && (
-          <span className="bg-primary text-primary-foreground text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            !
+          <span className="bg-primary/15 text-primary text-xs rounded-md px-1.5 py-0.5 font-medium">
+            {activeFilterCount}
           </span>
         )}
       </button>

@@ -7,7 +7,8 @@ import { ListingCard } from "@/components/listing/listing-card";
 import { FilterBar } from "@/components/filters/filter-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Heart } from "lucide-react";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import type { Category, Listing } from "@/types";
 
 interface FeedProps {
@@ -47,6 +48,7 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
   const observerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const categoryBreadcrumb = useCategoryBreadcrumb(filters.category);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // Infinite scroll
   const handleObserver = useCallback(
@@ -78,8 +80,8 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
         <FilterBar />
       </div>
 
-      {/* Context header — search query or category breadcrumb */}
-      {(filters.search || filters.category) && (
+      {/* Context header — search query or category breadcrumb (desktop only) */}
+      {isDesktop && (filters.search || filters.category) && (
         <div className="max-w-[1240px] mx-auto w-full px-6 pt-4 pb-1 flex items-center gap-3">
           <Button
             variant="outline"
@@ -116,13 +118,19 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
       )}
 
       {/* Results count */}
-      <div className="max-w-[1240px] mx-auto w-full px-6 py-2 text-sm text-muted-foreground">
-        {loading ? "Loading..." : `${total} listings found`}
+      <div className="max-w-[1240px] mx-auto w-full px-4 md:px-6 py-5 md:py-2 flex items-center justify-between">
+        <span className="text-2xl font-medium md:text-sm md:font-normal md:text-muted-foreground">
+          {loading ? "Loading..." : `${total} results`}
+        </span>
+        <button className="md:hidden inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-2 text-sm font-medium text-foreground hover:bg-accent cursor-pointer">
+          <Heart className="h-3.5 w-3.5" />
+          Save Search
+        </button>
       </div>
 
       {/* Listing cards — grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="max-w-[1240px] mx-auto px-6 pb-6">
+        <div className="max-w-[1240px] mx-auto px-4 md:px-6 pb-6">
           {loading && listings.length === 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {Array.from({ length: 12 }).map((_, i) => (

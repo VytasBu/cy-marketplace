@@ -96,11 +96,11 @@ export function HomepageView({
   );
 
   return (
-    <div ref={scrollRef} className="h-full bg-background rounded-3xl py-9 overflow-y-auto overflow-x-hidden">
-      <div className="mx-auto px-6 xl:px-[15%] space-y-12">
+    <div ref={scrollRef} className="h-full bg-background rounded-2xl md:rounded-3xl py-5 md:py-9 overflow-y-auto overflow-x-hidden border border-border/50 md:border-0">
+      <div className="mx-auto px-4 md:px-6 xl:px-[15%] space-y-8 md:space-y-12">
         {/* Browse categories */}
-        <section className="space-y-6">
-          <h2 className="text-center text-3xl font-medium text-foreground">
+        <section className="space-y-5 md:space-y-6">
+          <h2 className="text-left md:text-center text-2xl md:text-3xl font-medium text-foreground">
             Browse categories
           </h2>
 
@@ -116,15 +116,15 @@ export function HomepageView({
           ) : (
             <>
               {/* Mobile: 2-row horizontal scroll */}
-              <div className="md:hidden -mx-6 px-6 overflow-x-auto scrollbar-none">
-                <div className="grid grid-rows-2 grid-flow-col gap-3 w-max">
+              <div className="md:hidden -mx-4 px-4 overflow-x-auto scrollbar-none">
+                <div className="grid grid-rows-2 grid-flow-col gap-4 w-max">
                   {roots.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => handleCategoryClick(cat.slug)}
-                      className="flex flex-col items-center gap-1.5 group cursor-pointer w-[80px]"
+                      className="flex flex-col items-center gap-2 group cursor-pointer w-[74px]"
                     >
-                      <div className="w-[72px] h-[72px] rounded-2xl border bg-card flex items-center justify-center text-2xl transition-colors group-hover:bg-accent">
+                      <div className="w-[74px] h-[74px] rounded-2xl border bg-card flex items-center justify-center text-2xl transition-colors group-hover:bg-accent">
                         {cat.icon || (
                           <LayoutGrid className="h-6 w-6 text-muted-foreground" />
                         )}
@@ -161,8 +161,8 @@ export function HomepageView({
         </section>
 
         {/* Newest ads */}
-        <section className="space-y-6">
-          <h2 className="text-center text-2xl font-medium text-foreground">
+        <section className="space-y-5 md:space-y-6">
+          <h2 className="text-left md:text-center text-2xl font-medium text-foreground">
             Newest ads
           </h2>
 

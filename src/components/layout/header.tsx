@@ -7,13 +7,32 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SearchInput } from "@/components/filters/search-input";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useFilters } from "@/lib/hooks/use-filters";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { MobileFiltersSheet } from "@/components/filters/mobile-filters-sheet";
+import { MobileSortButton } from "@/components/filters/mobile-sort-button";
 
 interface HeaderProps {
   variant?: "homepage" | "search";
   hidden?: boolean;
 }
 
-function LogoRow({ loading, user }: { loading: boolean; user: unknown }) {
+function MobileBackButton() {
+  const { setFilters } = useFilters();
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      className="shrink-0 h-12 w-12 rounded-xl"
+      onClick={() => setFilters({ search: undefined, category: undefined })}
+    >
+      <ArrowLeft className="h-4 w-4" />
+    </Button>
+  );
+}
+
+function LogoRow({ loading, user, showThemeSwitcher = true }: { loading: boolean; user: unknown; showThemeSwitcher?: boolean }) {
   return (
     <div className="flex items-center">
       <a href="/" className="flex items-center">
@@ -22,7 +41,7 @@ function LogoRow({ loading, user }: { loading: boolean; user: unknown }) {
         </span>
       </a>
       <div className="ml-auto flex items-center gap-2">
-        <ThemeSwitcher />
+        {showThemeSwitcher && <ThemeSwitcher />}
         {!loading && (user ? <UserMenu /> : <LoginDialog />)}
       </div>
     </div>
@@ -39,19 +58,15 @@ export function Header({ variant = "homepage", hidden = false }: HeaderProps) {
   if (isHomepage) {
     return (
       <header className={cn(
-        "shrink-0 px-8 relative z-20",
-        // On mobile: always expanded padding. On desktop: depends on compact state.
-        "pt-2 pb-7 md:pt-0 md:pb-0",
+        "shrink-0 relative z-20",
+        // Mobile: 16px padding all sides. Desktop: original values.
+        "px-4 pt-4 pb-4 md:px-8 md:pt-0 md:pb-0",
         isCompact ? "md:pb-2" : "md:pt-2 md:pb-7",
       )}>
         {/* Mobile: always full layout — search full-width below logo */}
-        <div className="flex flex-col md:hidden">
-          <div className="mb-4">
-            <LogoRow loading={loading} user={user} />
-          </div>
-          <div className="max-w-[560px] mx-auto w-full">
-            <SearchInput ref={searchRef} placeholder="What are you looking for?" variant="homepage" />
-          </div>
+        <div className="flex flex-col gap-2.5 md:hidden">
+          <LogoRow loading={loading} user={user} showThemeSwitcher={false} />
+          <SearchInput ref={searchRef} placeholder="What are you looking for?" variant="homepage" />
         </div>
 
         {/* Desktop: compact (inline) or expanded based on scroll */}
@@ -86,7 +101,7 @@ export function Header({ variant = "homepage", hidden = false }: HeaderProps) {
 
   // Search results variant
   return (
-    <header className="shrink-0 px-8 pb-2 relative z-20">
+    <header className="shrink-0 px-4 pt-4 pb-4 md:px-8 md:pt-0 md:pb-2 relative z-20">
       {/* Desktop: single row */}
       <div className="hidden md:flex items-center gap-4">
         <a href="/" className="flex items-center shrink-0">
@@ -102,10 +117,19 @@ export function Header({ variant = "homepage", hidden = false }: HeaderProps) {
           {!loading && (user ? <UserMenu /> : <LoginDialog />)}
         </div>
       </div>
-      {/* Mobile: search full-width below logo row */}
-      <div className="flex flex-col gap-3 md:hidden">
-        <LogoRow loading={loading} user={user} />
-        <SearchInput ref={searchRef} />
+      {/* Mobile: logo row + back arrow with search + filter buttons */}
+      <div className="flex flex-col gap-2.5 md:hidden">
+        <LogoRow loading={loading} user={user} showThemeSwitcher={false} />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2.5">
+            <MobileBackButton />
+            <SearchInput ref={searchRef} variant="mobile-search" />
+          </div>
+          <div className="flex gap-2.5">
+            <MobileFiltersSheet />
+            <MobileSortButton />
+          </div>
+        </div>
       </div>
     </header>
   );

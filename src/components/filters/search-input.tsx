@@ -95,7 +95,7 @@ export interface SearchInputHandle {
 
 interface SearchInputProps {
   placeholder?: string;
-  variant?: "default" | "homepage";
+  variant?: "default" | "homepage" | "mobile-search";
 }
 
 export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(function SearchInput({ placeholder = "Search listings...", variant = "default" }, ref) {
@@ -181,6 +181,7 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
   const showSuggestions = inputValue.trim().length > 0;
 
   const isHomepage = variant === "homepage";
+  const isMobileSearch = variant === "mobile-search";
 
   return (
     <div ref={containerRef} className="relative flex-1">
@@ -209,20 +210,33 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
                 }
               }}
               className={cn(
-                "bg-background rounded-2xl h-11",
+                "bg-background h-12 rounded-xl md:rounded-2xl md:h-11 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border/50",
                 isHomepage
                   ? "pl-12 pr-12 text-base"
                   : "pl-9 pr-12"
               )}
             />
           </CommandPrimitive.Input>
-          <button
-            type="button"
-            onClick={() => executeSearch(inputValue)}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 rounded-[10px] bg-foreground text-background flex items-center justify-center hover:opacity-90 cursor-pointer"
-          >
-            <Search className="h-4 w-4" />
-          </button>
+          {isMobileSearch && inputValue ? (
+            <button
+              type="button"
+              onClick={() => {
+                setInputValue("");
+                executeSearch("");
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => executeSearch(inputValue)}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 w-8 rounded-[10px] bg-foreground text-background flex items-center justify-center hover:opacity-90 cursor-pointer"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {open && (showRecent || showSuggestions) && (
