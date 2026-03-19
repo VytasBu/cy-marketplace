@@ -122,7 +122,7 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
         <span className="text-2xl font-medium md:text-sm md:font-normal md:text-muted-foreground">
           {loading ? "Loading..." : `${total} results`}
         </span>
-        <button className="md:hidden inline-flex items-center gap-1 rounded-lg border-[0.5px] border-input bg-background shadow-xs px-2.5 py-2 text-sm font-medium text-foreground hover:bg-muted cursor-pointer">
+        <button className="md:hidden inline-flex items-center gap-1 border-[0.5px] border-input bg-background shadow-xs px-2.5 py-2 text-sm font-medium text-foreground hover:bg-muted cursor-pointer" style={{ borderRadius: 8 }}>
           <Heart className="h-3.5 w-3.5" />
           Save Search
         </button>

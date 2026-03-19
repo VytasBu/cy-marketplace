@@ -210,11 +210,12 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
                 }
               }}
               className={cn(
-                "bg-background h-12 rounded-xl md:rounded-2xl md:h-11 shadow-xs border-[0.5px] border-input",
+                "bg-background h-12 md:h-11 shadow-xs border-[0.5px] border-input",
                 isHomepage
                   ? "pl-12 pr-12 text-base"
                   : "pl-9 pr-12"
               )}
+              style={{ borderRadius: 12 }}
             />
           </CommandPrimitive.Input>
           {isMobileSearch && inputValue ? (
