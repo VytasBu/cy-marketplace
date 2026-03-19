@@ -210,7 +210,7 @@ export const SearchInput = forwardRef<SearchInputHandle, SearchInputProps>(funct
                 }
               }}
               className={cn(
-                "bg-background h-12 rounded-xl md:rounded-2xl md:h-11 shadow-[0_1px_2px_rgba(0,0,0,0.05)] border-border/50",
+                "bg-background h-12 rounded-xl md:rounded-2xl md:h-11 shadow-xs border-[0.5px] border-input",
                 isHomepage
                   ? "pl-12 pr-12 text-base"
                   : "pl-9 pr-12"

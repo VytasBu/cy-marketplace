@@ -3,7 +3,6 @@
 import { useAuth } from "@/lib/context/auth-context";
 import { LoginDialog } from "@/components/auth/login-dialog";
 import { UserMenu } from "@/components/auth/user-menu";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { SearchInput } from "@/components/filters/search-input";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -32,7 +31,7 @@ function MobileBackButton() {
   );
 }
 
-function LogoRow({ loading, user, showThemeSwitcher = true }: { loading: boolean; user: unknown; showThemeSwitcher?: boolean }) {
+function LogoRow({ loading, user }: { loading: boolean; user: unknown }) {
   return (
     <div className="flex items-center">
       <a href="/" className="flex items-center">
@@ -41,7 +40,6 @@ function LogoRow({ loading, user, showThemeSwitcher = true }: { loading: boolean
         </span>
       </a>
       <div className="ml-auto flex items-center gap-2">
-        {showThemeSwitcher && <ThemeSwitcher />}
         {!loading && (user ? <UserMenu /> : <LoginDialog />)}
       </div>
     </div>
@@ -65,7 +63,7 @@ export function Header({ variant = "homepage", hidden = false }: HeaderProps) {
       )}>
         {/* Mobile: always full layout — search full-width below logo */}
         <div className="flex flex-col gap-2.5 md:hidden">
-          <LogoRow loading={loading} user={user} showThemeSwitcher={false} />
+          <LogoRow loading={loading} user={user} />
           <SearchInput ref={searchRef} placeholder="What are you looking for?" variant="homepage" />
         </div>
 
@@ -81,7 +79,6 @@ export function Header({ variant = "homepage", hidden = false }: HeaderProps) {
               <SearchInput ref={searchRef} placeholder="What are you looking for?" variant="homepage" />
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <ThemeSwitcher />
               {!loading && (user ? <UserMenu /> : <LoginDialog />)}
             </div>
           </div>
@@ -113,13 +110,12 @@ export function Header({ variant = "homepage", hidden = false }: HeaderProps) {
           <SearchInput ref={searchRef} />
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <ThemeSwitcher />
           {!loading && (user ? <UserMenu /> : <LoginDialog />)}
         </div>
       </div>
       {/* Mobile: logo row + back arrow with search + filter buttons */}
       <div className="flex flex-col gap-2.5 md:hidden">
-        <LogoRow loading={loading} user={user} showThemeSwitcher={false} />
+        <LogoRow loading={loading} user={user} />
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2.5">
             <MobileBackButton />

@@ -4,10 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/context/auth-context";
-import { Heart, Search, LogOut, ChevronDown } from "lucide-react";
+import { Heart, Search, LogOut, ChevronDown, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
+  const { resolvedTheme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -70,6 +72,13 @@ export function UserMenu() {
             Saved Searches
           </button>
           <div className="border-t my-1" />
+          <button
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
+          >
+            {resolvedTheme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
+          </button>
           <button
             onClick={async () => {
               setOpen(false);

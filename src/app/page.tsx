@@ -50,7 +50,7 @@ function HomeContent() {
   }, [isDesktop]);
 
   return (
-    <div className="h-screen flex flex-col bg-canvas p-2 rounded-4xl">
+    <div className="h-screen flex flex-col bg-canvas p-0 md:p-2 md:rounded-4xl">
       <Header variant={hasActiveSearch ? "search" : "homepage"} hidden={headerHidden && !hasActiveSearch} />
       <div className="flex-1 min-h-0 flex overflow-hidden">
         {hasActiveSearch ? (
