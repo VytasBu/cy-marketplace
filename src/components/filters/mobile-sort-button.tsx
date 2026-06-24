@@ -31,12 +31,9 @@ export function MobileSortButton() {
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "inline-flex items-center justify-center gap-1 border-[0.5px] border-input bg-background shadow-xs px-3 py-1 h-8 text-sm font-medium whitespace-nowrap transition-colors hover:bg-muted cursor-pointer flex-1",
-          isActive
-            ? "border-primary text-primary"
-            : "text-foreground"
+          "flex-1 inline-flex items-center justify-center gap-2 h-9 px-3 text-sm border rounded-md hover:bg-accent",
+          isActive && "border-primary text-primary"
         )}
-        style={{ borderRadius: 8 }}
       >
         <ArrowDownWideNarrow className="h-3.5 w-3.5 opacity-60" />
         {currentLabel}
