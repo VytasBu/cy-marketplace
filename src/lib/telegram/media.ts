@@ -49,24 +49,27 @@ async function uploadToSupabase(
   listingId: string,
   index: number
 ): Promise<string | null> {
-  const path = `${listingId}/${index}.jpg`;
+  const path = `${listingId}/${index}.webp`;
 
-  // Compress: resize to max 800px width, JPEG quality 70
+  // WebP q=70 at 600px wide is ~50% smaller than equivalent JPEG settings
+  // with no visible quality loss on mobile-first browsing.
   let compressed: Buffer;
+  let contentType = "image/webp";
   try {
     compressed = await sharp(buffer)
-      .resize(800, undefined, { withoutEnlargement: true })
-      .jpeg({ quality: 70 })
+      .resize(600, undefined, { withoutEnlargement: true })
+      .webp({ quality: 70 })
       .toBuffer();
   } catch {
-    // If sharp fails (e.g. corrupted image), use original
+    // If sharp fails (e.g. corrupted image), upload original as JPEG.
     compressed = buffer;
+    contentType = "image/jpeg";
   }
 
   const { error } = await supabase.storage
     .from("listing-photos")
     .upload(path, compressed, {
-      contentType: "image/jpeg",
+      contentType,
       upsert: true,
     });
 
