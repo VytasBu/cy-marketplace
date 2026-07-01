@@ -1,0 +1,33 @@
+name: Hourly scrape
+
+# Vercel Hobby caps built-in crons at one run per day, but the scrape
+# route itself is cheap and idempotent. GitHub Actions hits it every
+# hour so saved-search notifications land in under 60 min. Runs cost ~5s
+# each, well under the 2000-min/mo free ceiling for private repos.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {} # allows manual trigger from the Actions tab
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Hit /api/scrape
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          RESPONSE=$(curl -sS -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 90 \
+            "https://cy-marketplace.vercel.app/api/scrape")
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+          echo "HTTP $STATUS"
+          echo "$BODY"
+          # Fail the job on 5xx so a broken deploy shows up in the run log.
+          if [ "$STATUS" -ge 500 ]; then
+            exit 1
+          fi
