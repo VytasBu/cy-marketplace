@@ -1,28 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scrapeChannel } from "@/lib/telegram/scraper";
-import { makePgClient } from "@/lib/supabase/pg";
+import { r2BucketBytes } from "@/lib/r2";
 
 export const maxDuration = 60; // Allow up to 60s for Vercel
 
-// Refuse to scrape if the bucket is already over this. /api/cleanup's
-// TARGET is 750 MB; if we're at 1000 MB the cleanup cron is failing or
-// behind — better to skip a scrape window than push us over the quota
-// and break the whole app again.
-const SCRAPE_HARD_LIMIT_BYTES = 1000 * 1024 * 1024;
+// Refuse to scrape if the R2 bucket is already over this. R2 free tier
+// is 10 GB — this cap leaves ~35× headroom and gives us time to notice
+// before we ever pay a cent. Also protects against a leaked-key runaway
+// scraper by refusing to keep uploading past the threshold.
+const SCRAPE_HARD_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
 
 async function bucketIsOverLimit(): Promise<{ over: boolean; bytes: number }> {
-  const pg = makePgClient();
-  try {
-    await pg.connect();
-    const { rows: [r] } = await pg.query<{ bytes: string }>(
-      `select coalesce(sum((metadata->>'size')::bigint), 0)::text as bytes
-       from storage.objects where bucket_id = 'listing-photos'`
-    );
-    const bytes = Number(r.bytes);
-    return { over: bytes > SCRAPE_HARD_LIMIT_BYTES, bytes };
-  } finally {
-    await pg.end().catch(() => {});
-  }
+  const bytes = await r2BucketBytes();
+  return { over: bytes > SCRAPE_HARD_LIMIT_BYTES, bytes };
 }
 
 export async function GET(request: NextRequest) {

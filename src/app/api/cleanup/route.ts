@@ -1,39 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
 import { makePgClient } from "@/lib/supabase/pg";
+import { r2BucketBytes, r2DeleteMany, r2KeyFromUrl, r2ListAll } from "@/lib/r2";
 
 export const maxDuration = 60;
 
 // ──────────────────────────────────────────────────────────────────────
-// Tunables — adjust here, not at call sites.
+// Tunables — R2 has 10 GB free; we're targeting ~280 MB steady state
+// after WebP. Set generous cushions.
 // ──────────────────────────────────────────────────────────────────────
 const RETENTION_DAYS = 21;
-const TARGET_BYTES = 650 * 1024 * 1024; // size-based sweep aims for this
+const TARGET_BYTES = 1024 * 1024 * 1024; // 1 GB target, well under R2's 10 GB free
 const TIME_BUDGET_MS = 50_000;
 
-// ──────────────────────────────────────────────────────────────────────
-// Why SQL-direct instead of the Storage API?
-//
-// When a Supabase org goes over its storage quota, the Storage API (read,
-// write AND delete) returns 402 — meaning the API-based cleanup that's
-// supposed to recover the project is itself blocked. Self-healing
-// impossible.
-//
-// Postgres direct connections (via the pooler) are not gated by the quota.
-// Supabase guards `storage.objects` with a BEFORE-DELETE trigger
-// (`protect_delete`) that blocks direct SQL deletes. We bypass it for the
-// connection by setting `session_replication_role = replica`, which is
-// Postgres's standard mechanism for disabling triggers in maintenance
-// contexts.
-//
-// Side effect: the underlying S3 blobs become orphaned on Supabase's
-// infrastructure. They don't count against your reported usage (Supabase
-// computes that from `storage.objects.metadata.size`), so the project
-// unblocks immediately and stays unblocked.
-// ──────────────────────────────────────────────────────────────────────
+/** Extract the object key from a legacy Supabase URL, if it is one. */
+function supabasePathFromUrl(url: string): string | null {
+  const m = url.match(/\/listing-photos\/(.+)$/);
+  return m ? m[1] : null;
+}
 
-function pathExtractRegex() {
-  // Note: kept identical between read (CTE) and any future code.
-  return "/listing-photos/(.+)$";
+/**
+ * Delete photos referenced by a set of listing URLs. Handles both R2
+ * (current) and Supabase (legacy) URLs — Supabase deletes go through
+ * SQL bypass because the Storage API is restricted.
+ */
+async function deletePhotosByUrls(
+  pg: import("pg").Client,
+  urls: string[]
+): Promise<{ r2: number; supabase: number }> {
+  const r2Keys: string[] = [];
+  const supabasePaths: string[] = [];
+
+  for (const url of urls) {
+    const rKey = r2KeyFromUrl(url);
+    if (rKey) {
+      r2Keys.push(rKey);
+      continue;
+    }
+    const sPath = supabasePathFromUrl(url);
+    if (sPath) supabasePaths.push(sPath);
+  }
+
+  const r2Deleted = await r2DeleteMany(r2Keys);
+
+  let supabaseDeleted = 0;
+  if (supabasePaths.length > 0) {
+    await pg.query("begin");
+    try {
+      await pg.query("set local session_replication_role = replica");
+      const res = await pg.query(
+        `delete from storage.objects
+         where bucket_id = 'listing-photos'
+           and name = any($1::text[])`,
+        [supabasePaths]
+      );
+      await pg.query("commit");
+      supabaseDeleted = res.rowCount ?? 0;
+    } catch (e) {
+      await pg.query("rollback").catch(() => {});
+      throw e;
+    }
+  }
+
+  return { r2: r2Deleted, supabase: supabaseDeleted };
 }
 
 export async function GET(request: NextRequest) {
@@ -51,121 +79,107 @@ export async function GET(request: NextRequest) {
 
   const result = {
     orphansDeleted: 0,
-    oldPhotosDeleted: 0,
+    oldR2Deleted: 0,
+    oldSupabaseDeleted: 0,
     oldListingsDeleted: 0,
-    overflowPhotosDeleted: 0,
+    overflowR2Deleted: 0,
+    overflowSupabaseDeleted: 0,
     overflowListingsDeleted: 0,
-    bytesBefore: 0,
-    bytesAfter: 0,
+    r2BytesBefore: 0,
+    r2BytesAfter: 0,
     errors: [] as string[],
     timedOut: false,
     durationMs: 0,
   };
 
-  async function bucketBytes(): Promise<number> {
-    const { rows: [r] } = await pg.query<{ bytes: string }>(
-      `select coalesce(sum((metadata->>'size')::bigint), 0)::text as bytes
-       from storage.objects where bucket_id = 'listing-photos'`
-    );
-    return Number(r.bytes);
-  }
-
-  // Run a storage.objects DELETE with triggers temporarily disabled, then
-  // restore default behavior so subsequent statements (on `listings` etc.)
-  // get their FK constraints and updated_at triggers as usual.
-  async function deleteFromStorageObjects(sql: string): Promise<number> {
-    await pg.query("begin");
-    try {
-      await pg.query("set local session_replication_role = replica");
-      const res = await pg.query(sql);
-      await pg.query("commit");
-      return res.rowCount ?? 0;
-    } catch (e) {
-      await pg.query("rollback").catch(() => {});
-      throw e;
-    }
-  }
-
   try {
-    result.bytesBefore = await bucketBytes();
+    result.r2BytesBefore = await r2BucketBytes();
 
     // ──────────────────────────────────────────────────────────────
-    // 1. Orphan sweep — every object not referenced by listings.photos.
+    // 1. R2 orphan sweep — any R2 object not referenced by a listing.
     // ──────────────────────────────────────────────────────────────
     if (!timedOut()) {
-      result.orphansDeleted = await deleteFromStorageObjects(`
-        with referenced as (
-          select coalesce(substring(url from '${pathExtractRegex()}'), '') as name
-          from listings, unnest(photos) as url
-          where photos is not null
-        )
-        delete from storage.objects o
-        where o.bucket_id = 'listing-photos'
-          and not exists (select 1 from referenced r where r.name = o.name)
-      `);
-    }
-
-    // ──────────────────────────────────────────────────────────────
-    // 2. Time-based — listings older than RETENTION_DAYS plus their photos.
-    // ──────────────────────────────────────────────────────────────
-    if (!timedOut()) {
-      result.oldPhotosDeleted = await deleteFromStorageObjects(`
-        with old_paths as (
-          select substring(url from '${pathExtractRegex()}') as name
-          from listings, unnest(photos) as url
-          where raw_date < now() - interval '${RETENTION_DAYS} days'
-        )
-        delete from storage.objects o
-        where o.bucket_id = 'listing-photos'
-          and exists (select 1 from old_paths p where p.name = o.name)
-      `);
-
-      const rowRes = await pg.query(
-        `delete from listings where raw_date < now() - interval '${RETENTION_DAYS} days'`
+      const refRes = await pg.query<{ url: string }>(
+        "select unnest(photos) as url from listings where photos is not null"
       );
-      result.oldListingsDeleted = rowRes.rowCount ?? 0;
+      const referencedR2Keys = new Set<string>();
+      for (const r of refRes.rows) {
+        const k = r2KeyFromUrl(r.url);
+        if (k) referencedR2Keys.add(k);
+      }
+      const allR2 = await r2ListAll();
+      const orphans = allR2
+        .map((o) => o.key)
+        .filter((k) => !referencedR2Keys.has(k));
+      result.orphansDeleted = await r2DeleteMany(orphans);
     }
 
     // ──────────────────────────────────────────────────────────────
-    // 3. Size-based safety net — if still over TARGET, delete oldest
-    //    remaining listings until under.
+    // 2. Time-based — listings older than RETENTION_DAYS + their photos.
     // ──────────────────────────────────────────────────────────────
     if (!timedOut()) {
-      let current = await bucketBytes();
-      while (current > TARGET_BYTES && !timedOut()) {
-        result.overflowPhotosDeleted += await deleteFromStorageObjects(`
-          with overflow as (
-            select id from listings
-            order by raw_date asc nulls first
-            limit 200
-          ),
-          paths as (
-            select substring(url from '${pathExtractRegex()}') as name
-            from listings l, unnest(l.photos) as url
-            where l.id in (select id from overflow)
-          )
-          delete from storage.objects o
-          where o.bucket_id = 'listing-photos'
-            and exists (select 1 from paths p where p.name = o.name)
-        `);
+      const oldRes = await pg.query<{ id: string; photos: string[] | null }>(
+        `select id, photos from listings
+         where raw_date < now() - interval '${RETENTION_DAYS} days'`
+      );
 
-        const overflowRows = await pg.query(`
-          delete from listings
-          where id in (
-            select id from listings
-            order by raw_date asc nulls first
-            limit 200
-          )
-        `);
-        const deletedThisRound = overflowRows.rowCount ?? 0;
-        result.overflowListingsDeleted += deletedThisRound;
-        if (deletedThisRound === 0) break;
+      const urls: string[] = [];
+      for (const row of oldRes.rows) {
+        if (Array.isArray(row.photos)) urls.push(...row.photos);
+      }
+      const del = await deletePhotosByUrls(pg, urls);
+      result.oldR2Deleted = del.r2;
+      result.oldSupabaseDeleted = del.supabase;
 
-        current = await bucketBytes();
+      if (oldRes.rows.length > 0 && !timedOut()) {
+        const ids = oldRes.rows.map((r) => r.id);
+        for (let i = 0; i < ids.length; i += 500) {
+          const chunk = ids.slice(i, i + 500);
+          const res = await pg.query(
+            "delete from listings where id = any($1::uuid[])",
+            [chunk]
+          );
+          result.oldListingsDeleted += res.rowCount ?? 0;
+        }
       }
     }
 
-    result.bytesAfter = await bucketBytes();
+    // ──────────────────────────────────────────────────────────────
+    // 3. Size safety net — R2 measured only. Delete oldest remaining
+    //    listings until R2 is under TARGET_BYTES.
+    // ──────────────────────────────────────────────────────────────
+    if (!timedOut()) {
+      let current = await r2BucketBytes();
+      while (current > TARGET_BYTES && !timedOut()) {
+        const { rows } = await pg.query<{ id: string; photos: string[] | null }>(
+          `select id, photos from listings
+           order by raw_date asc nulls first
+           limit 200`
+        );
+        if (rows.length === 0) break;
+
+        const urls: string[] = [];
+        for (const row of rows) {
+          if (Array.isArray(row.photos)) urls.push(...row.photos);
+        }
+        const del = await deletePhotosByUrls(pg, urls);
+        result.overflowR2Deleted += del.r2;
+        result.overflowSupabaseDeleted += del.supabase;
+
+        const ids = rows.map((r) => r.id);
+        const delRes = await pg.query(
+          "delete from listings where id = any($1::uuid[])",
+          [ids]
+        );
+        const deletedThisRound = delRes.rowCount ?? 0;
+        result.overflowListingsDeleted += deletedThisRound;
+        if (deletedThisRound === 0) break;
+
+        current = await r2BucketBytes();
+      }
+    }
+
+    result.r2BytesAfter = await r2BucketBytes();
   } catch (e) {
     result.errors.push(`fatal: ${e instanceof Error ? e.message : String(e)}`);
   } finally {
@@ -177,8 +191,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: result.errors.length === 0,
     ...result,
-    bytesBeforeMB: Math.round(result.bytesBefore / 1024 / 1024),
-    bytesAfterMB: Math.round(result.bytesAfter / 1024 / 1024),
+    r2BytesBeforeMB: Math.round(result.r2BytesBefore / 1024 / 1024),
+    r2BytesAfterMB: Math.round(result.r2BytesAfter / 1024 / 1024),
     targetMB: Math.round(TARGET_BYTES / 1024 / 1024),
   });
 }
