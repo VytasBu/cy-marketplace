@@ -5,6 +5,7 @@ import { useListings } from "@/lib/hooks/use-listings";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { ListingCard } from "@/components/listing/listing-card";
 import { FilterBar } from "@/components/filters/filter-bar";
+import { SaveSearchButton } from "@/components/filters/save-search-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart } from "lucide-react";
@@ -118,10 +119,11 @@ export function Feed({ onSelectListing, selectedId }: FeedProps) {
       )}
 
       {/* Results count */}
-      <div className="max-w-[1240px] mx-auto w-full px-4 md:px-6 py-5 md:py-2 flex items-center justify-between">
+      <div className="max-w-[1240px] mx-auto w-full px-4 md:px-6 py-5 md:py-2 flex items-center justify-between gap-2">
         <span className="text-2xl font-medium md:text-sm md:font-normal md:text-muted-foreground">
           {loading ? "Loading..." : `${total} results`}
         </span>
+        <SaveSearchButton />
         <button className="md:hidden inline-flex items-center gap-1 border-[0.5px] border-input bg-background shadow-xs px-2.5 py-2 text-sm font-medium text-foreground hover:bg-muted cursor-pointer" style={{ borderRadius: 8 }}>
           <Heart className="h-3.5 w-3.5" />
           Save Search

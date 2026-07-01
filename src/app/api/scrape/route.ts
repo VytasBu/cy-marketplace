@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scrapeChannel } from "@/lib/telegram/scraper";
 import { r2BucketBytes } from "@/lib/r2";
+import { runNotifications } from "@/lib/saved-searches";
 
 export const maxDuration = 60; // Allow up to 60s for Vercel
 
@@ -49,6 +50,17 @@ export async function GET(request: NextRequest) {
     const offsetId = offsetIdParam ? parseInt(offsetIdParam) : undefined;
 
     const result = await scrapeChannel(direction, offsetId);
+
+    // Best-effort notifications: never fail the scrape response for email issues.
+    let notify: Awaited<ReturnType<typeof runNotifications>> | null = null;
+    if (result.processed > 0 && process.env.RESEND_API_KEY) {
+      try {
+        notify = await runNotifications();
+      } catch (e) {
+        console.error("Notify pass failed:", e);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       direction,
@@ -56,6 +68,7 @@ export async function GET(request: NextRequest) {
       errors: result.errors,
       oldestId: result.oldestId,
       batches: result.batches,
+      notify,
     });
   } catch (error) {
     console.error("Scrape error:", error);
