@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/context/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaProvider } from "@/components/pwa-provider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -52,6 +53,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="light">
             <AuthProvider>
               <TooltipProvider>{children}</TooltipProvider>
+              <Toaster position="top-center" richColors />
             </AuthProvider>
           </ThemeProvider>
         </PwaProvider>

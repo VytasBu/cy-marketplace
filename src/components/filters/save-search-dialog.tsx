@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Bookmark } from "lucide-react";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { useSavedSearches } from "@/lib/hooks/use-saved-searches";
+import { toast } from "sonner";
 
 export function SaveSearchDialog() {
   const [name, setName] = useState("");
@@ -43,7 +44,8 @@ export function SaveSearchDialog() {
     setSaving(true);
     setError(null);
 
-    const result = await saveSearch(name.trim(), filters);
+    const savedName = name.trim();
+    const result = await saveSearch(savedName, filters);
     setSaving(false);
 
     if (result?.error) {
@@ -51,6 +53,9 @@ export function SaveSearchDialog() {
     } else {
       setName("");
       setOpen(false);
+      toast.success(`Saved "${savedName}"`, {
+        description: "We'll email you when new listings match.",
+      });
     }
   };
 

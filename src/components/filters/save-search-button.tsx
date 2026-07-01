@@ -16,6 +16,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { useFilters } from "@/lib/hooks/use-filters";
 import { useSavedSearches } from "@/lib/hooks/use-saved-searches";
 import { useAuth } from "@/lib/context/auth-context";
+import { toast } from "sonner";
 
 export function SaveSearchButton() {
   const [name, setName] = useState("");
@@ -53,7 +54,8 @@ export function SaveSearchButton() {
     setSaving(true);
     setError(null);
 
-    const result = await saveSearch(name.trim(), filters);
+    const savedName = name.trim();
+    const result = await saveSearch(savedName, filters);
     setSaving(false);
 
     if (result?.error) {
@@ -61,6 +63,9 @@ export function SaveSearchButton() {
     } else {
       setName("");
       setOpen(false);
+      toast.success(`Saved "${savedName}"`, {
+        description: "We'll email you when new listings match.",
+      });
     }
   };
 
