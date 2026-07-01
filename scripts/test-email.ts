@@ -7,15 +7,16 @@ import { sendEmail } from "../src/lib/email";
 async function main() {
   const to = process.argv[2] || "vytas@outframe.co";
   console.log(`→ Sending test email to ${to}...`);
-  const res = await sendEmail(
+  const res = await sendEmail({
     to,
-    "CY Marketplace — email pipeline test",
-    `<div style="font-family:sans-serif;padding:20px;">
+    subject: "CY Marketplace — email pipeline test",
+    html: `<div style="font-family:sans-serif;padding:20px;">
       <h2 style="margin:0 0 12px;">✅ Resend is working</h2>
       <p>If you're reading this, your saved-search notification pipeline is wired up correctly.</p>
       <p style="color:#666;font-size:13px;">Sent from a manual test at ${new Date().toISOString()}.</p>
-    </div>`
-  );
+    </div>`,
+    text: `Resend is working. Manual test at ${new Date().toISOString()}.`,
+  });
   if (res.error) {
     console.error("✗ Failed:", res.error);
     process.exit(1);

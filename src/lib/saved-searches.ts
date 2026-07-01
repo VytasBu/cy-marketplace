@@ -26,6 +26,7 @@ interface SavedSearchRow {
   name: string;
   filters: SavedSearchFilters;
   last_notified_at: Date;
+  unsubscribe_token: string;
 }
 
 interface MatchListing {
@@ -160,8 +161,9 @@ function renderDigest(
   filterSummary: string,
   matches: MatchListing[],
   overflow: boolean,
-  searchUrl: string
-): { subject: string; html: string } {
+  searchUrl: string,
+  unsubscribeUrl: string
+): { subject: string; html: string; text: string } {
   const subject = `${matches.length}${overflow ? "+" : ""} new match${matches.length === 1 ? "" : "es"} for "${searchName}"`;
 
   const items = matches
@@ -188,10 +190,31 @@ function renderDigest(
     <ul style="list-style:none;padding:0;margin:0;">${items}</ul>
     ${overflowNote}
     <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-    <p style="color:#999;font-size:12px;">CY Marketplace saved search notification.</p>
+    <p style="color:#999;font-size:12px;">
+      CY Marketplace saved-search notification.
+      <br>
+      <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from this search</a>
+    </p>
   </div>`;
 
-  return { subject, html };
+  const textLines = [
+    `${searchName} — ${matches.length}${overflow ? "+" : ""} new match${matches.length === 1 ? "" : "es"}`,
+    filterSummary,
+    "",
+    ...matches.slice(0, MAX_PER_EMAIL).map((l) => {
+      const priceStr = l.price != null ? `€${l.price}` : "no price";
+      const raw = l.description_en || l.description_original || "";
+      const title = raw.split("\n")[0].slice(0, 100) || "(no description)";
+      const loc = l.location ? ` — ${l.location}` : "";
+      return `• ${title}\n  ${priceStr}${loc}\n  ${SITE_URL}/listing/${l.id}`;
+    }),
+    "",
+    overflow ? `More matches waiting: ${searchUrl}` : "",
+    "",
+    `Unsubscribe: ${unsubscribeUrl}`,
+  ].filter(Boolean);
+
+  return { subject, html, text: textLines.join("\n") };
 }
 
 function escapeHtml(s: string): string {
@@ -238,7 +261,7 @@ export async function runNotifications(): Promise<NotifyResult> {
 
   try {
     const { rows: searches } = await pg.query<SavedSearchRow>(`
-      select id, user_id, name, filters, last_notified_at
+      select id, user_id, name, filters, last_notified_at, unsubscribe_token
       from saved_searches
       where notify_enabled = true
     `);
@@ -270,15 +293,28 @@ export async function runNotifications(): Promise<NotifyResult> {
         continue;
       }
 
-      const { subject, html } = renderDigest(
+      const unsubscribeUrl = `${SITE_URL}/api/unsubscribe?token=${search.unsubscribe_token}`;
+      const { subject, html, text } = renderDigest(
         search.name,
         summarize(search.filters),
         matches,
         overflow,
-        buildSearchUrl(search.filters)
+        buildSearchUrl(search.filters),
+        unsubscribeUrl
       );
 
-      const send = await sendEmail(email, subject, html);
+      const send = await sendEmail({
+        to: email,
+        subject,
+        html,
+        text,
+        headers: {
+          // RFC 2369 + 8058: gives Gmail's "Unsubscribe" chip a real target,
+          // signals to spam filters that this is legit notification email.
+          "List-Unsubscribe": `<${unsubscribeUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+      });
       if (send.error) {
         result.errors.push(`send(${search.id}): ${send.error}`);
         continue;

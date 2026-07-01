@@ -1,14 +1,16 @@
 /**
  * Email delivery via Resend.
  *
- * Resend's free tier (100/day, 3k/mo) is enough for this app's saved-search
- * notifications. The `onboarding@resend.dev` sender works with no domain
- * verification — good enough for personal notifications. When we outgrow
- * it, swap FROM to a verified custom domain.
+ * Free tier (100/day, 3k/mo) sends from onboarding@resend.dev, which only
+ * delivers reliably to the Resend account owner and lands in spam
+ * elsewhere. Verifying a custom domain in Resend and setting RESEND_FROM
+ * to `notifications@<yourdomain>` unlocks any-recipient delivery with
+ * good inbox placement.
  */
 import { Resend } from "resend";
 
-const FROM = process.env.RESEND_FROM || "CY Marketplace <onboarding@resend.dev>";
+const FROM =
+  process.env.RESEND_FROM || "CY Marketplace Alerts <onboarding@resend.dev>";
 
 let client: Resend | null = null;
 function getClient(): Resend {
@@ -19,13 +21,26 @@ function getClient(): Resend {
   return client;
 }
 
+interface SendOptions {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  headers?: Record<string, string>;
+}
+
 export async function sendEmail(
-  to: string,
-  subject: string,
-  html: string
+  opts: SendOptions
 ): Promise<{ error?: string }> {
   try {
-    const res = await getClient().emails.send({ from: FROM, to, subject, html });
+    const res = await getClient().emails.send({
+      from: FROM,
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+      headers: opts.headers,
+    });
     if (res.error) return { error: res.error.message };
     return {};
   } catch (e) {
